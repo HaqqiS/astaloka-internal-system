@@ -26,16 +26,7 @@ export function CommentForm({
   reportId,
   onSuccess,
 }: CommentFormProps) {
-  const createComment = useCreateComment({
-    onSuccess: () => {
-      toast.success("Komentar berhasil dikirim");
-      form.reset();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const createComment = useCreateComment();
 
   const form = useForm({
     defaultValues: {
@@ -47,11 +38,18 @@ export function CommentForm({
     onSubmit: async ({ value }) => {
       const trimmed = value.content.trim();
       if (!trimmed) return;
-      createComment.mutate({
-        projectId,
-        reportId,
-        content: trimmed,
-      });
+      try {
+        await createComment.mutateAsync({
+          projectId,
+          reportId,
+          content: trimmed,
+        });
+        toast.success("Komentar berhasil dikirim");
+        form.reset();
+        onSuccess?.();
+      } catch {
+        // Ditangani secara global oleh mutationCache
+      }
     },
   });
 

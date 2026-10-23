@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { isAdminOrExecutive } from "~/server/api/helpers/permission";
 import {
   createTRPCRouter,
   projectProcedure,
@@ -37,11 +38,10 @@ export const logisticRouter = createTRPCRouter({
    */
   getAnalytics: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.session.user;
-    const isAdminOrExecutive =
-      user.roleGlobal === "ADMIN" || user.roleGlobal === "EXECUTIVE";
+    const isGlobalViewer = isAdminOrExecutive(user.roleGlobal);
 
     const projects = await ctx.db.project.findMany({
-      where: isAdminOrExecutive
+      where: isGlobalViewer
         ? { status: "ACTIVE" }
         : {
             status: "ACTIVE",
@@ -102,9 +102,17 @@ export const logisticRouter = createTRPCRouter({
   createItem: logisticAdminProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        name: z.string().trim().min(1).max(100),
-        unit: z.string().trim().min(1).max(20), // e.g., "Sack", "Pcs", "Kg"
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Nama barang tidak boleh kosong")
+          .max(100, "Nama barang maksimal 100 karakter"),
+        unit: z
+          .string()
+          .trim()
+          .min(1, "Satuan wajib diisi")
+          .max(20, "Satuan maksimal 20 karakter"), // e.g., "Sack", "Pcs", "Kg"
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -133,7 +141,7 @@ export const logisticRouter = createTRPCRouter({
   getItems: projectMemberProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
       }),
     )
     .query(async ({ ctx }) => {
@@ -163,10 +171,15 @@ export const logisticRouter = createTRPCRouter({
   updateItem: logisticAdminProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        itemId: z.string(),
-        name: z.string().trim().min(1).max(100).optional(),
-        unit: z.string().trim().min(1).max(20).optional(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        itemId: z.string().min(1, "ID Barang wajib diisi"),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Nama barang tidak boleh kosong")
+          .max(100)
+          .optional(),
+        unit: z.string().trim().min(1, "Satuan wajib diisi").max(20).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -181,7 +194,7 @@ export const logisticRouter = createTRPCRouter({
       if (!item) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Logistic item not found in this project",
+          message: "Barang logistik tidak ditemukan dalam proyek ini",
         });
       }
 
@@ -203,8 +216,8 @@ export const logisticRouter = createTRPCRouter({
   deleteItem: logisticAdminProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        itemId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        itemId: z.string().min(1, "ID Barang wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -219,7 +232,7 @@ export const logisticRouter = createTRPCRouter({
       if (!item) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Logistic item not found in this project",
+          message: "Barang logistik tidak ditemukan dalam proyek ini",
         });
       }
 
@@ -242,10 +255,13 @@ export const logisticRouter = createTRPCRouter({
   recordTransaction: logisticMutationProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        itemId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        itemId: z.string().min(1, "ID Barang wajib diisi"),
         type: z.enum(["IN", "OUT"]),
-        quantity: z.number().positive(),
+        quantity: z
+          .number()
+          .positive("Jumlah harus lebih dari 0")
+          .max(1_000_000, "Jumlah melebihi batas maksimal"),
         notes: z.string().trim().max(1000).optional(),
       }),
     )
@@ -262,7 +278,7 @@ export const logisticRouter = createTRPCRouter({
         if (!item) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Logistic item not found in this project",
+            message: "Barang logistik tidak ditemukan dalam proyek ini",
           });
         }
 
@@ -344,7 +360,7 @@ export const logisticRouter = createTRPCRouter({
         if (!item) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Logistic item not found in this project",
+            message: "Barang logistik tidak ditemukan dalam proyek ini",
           });
         }
       }

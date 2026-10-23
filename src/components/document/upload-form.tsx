@@ -65,6 +65,7 @@ export function UploadForm({
   const { upload, isLoading: isUploading, remove } = useCloudinaryUpload();
 
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const isPending = uploadDocument.isPending || isUploading;
 
@@ -90,9 +91,10 @@ export function UploadForm({
     },
     onSubmit: async ({ value }) => {
       if (!file) {
-        toast.error("Harap unggah sebuah file");
+        setFileError("Harap unggah sebuah berkas dokumen");
         return;
       }
+      setFileError(null);
 
       let uploadedPublicId: string | null = null;
 
@@ -136,9 +138,7 @@ export function UploadForm({
             console.error("Failed to cleanup Cloudinary asset:", cleanupErr);
           }
         }
-        toast.error(
-          error instanceof Error ? error.message : "Gagal mengunggah dokumen",
-        );
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });
@@ -160,10 +160,16 @@ export function UploadForm({
           projectSlug={projectSlug}
           type="documents"
           value={file ?? undefined}
-          onFileChange={(selectedFile) => setFile(selectedFile)}
+          onFileChange={(selectedFile) => {
+            setFile(selectedFile);
+            if (selectedFile) setFileError(null);
+          }}
           onRemove={() => setFile(null)}
           disabled={isUploading}
         />
+        {fileError && (
+          <p className="text-xs text-destructive font-medium">{fileError}</p>
+        )}
       </div>
 
       <FieldGroup>

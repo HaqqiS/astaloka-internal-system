@@ -95,10 +95,8 @@ export function LogisticItemForm({
           toast.success("Barang berhasil ditambahkan");
         }
         onSuccess?.();
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Terjadi kesalahan",
-        );
+      } catch {
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });

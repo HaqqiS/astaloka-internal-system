@@ -133,13 +133,8 @@ export function DepositForm({
 
         form.reset();
         onSuccess?.();
-      } catch (error) {
-        toast.error(
-          isEdit
-            ? "Gagal memperbarui transaksi"
-            : "Gagal menambahkan dana ke kas",
-        );
-        console.error(error);
+      } catch {
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });

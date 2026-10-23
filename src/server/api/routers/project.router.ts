@@ -6,6 +6,10 @@ import {
   extractShortIdFromSlug,
 } from "~/lib/slug-utils";
 import {
+  isAdminOrExecutive,
+  requireProjectMembership,
+} from "~/server/api/helpers/permission";
+import {
   adminProcedure,
   createTRPCRouter,
   projectProcedure,
@@ -41,7 +45,11 @@ export const projectRouter = createTRPCRouter({
   create: adminProcedure
     .input(
       z.object({
-        name: z.string().trim().min(1).max(100),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Nama proyek wajib diisi")
+          .max(100, "Nama proyek maksimal 100 karakter"),
         slug: z.string().trim().max(100).optional(),
         description: z.string().trim().max(3000).optional(),
         location: z.string().trim().max(255).optional(),
@@ -258,7 +266,7 @@ export const projectRouter = createTRPCRouter({
   getById: projectMemberProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
       }),
     )
     .query(async ({ ctx }) => {
@@ -292,7 +300,7 @@ export const projectRouter = createTRPCRouter({
       if (!project) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found",
+          message: "Proyek tidak ditemukan",
         });
       }
 
@@ -306,7 +314,7 @@ export const projectRouter = createTRPCRouter({
   getBySlug: protectedProcedure
     .input(
       z.object({
-        slug: z.string(),
+        slug: z.string().trim().min(1, "Slug proyek wajib diisi"),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -356,12 +364,12 @@ export const projectRouter = createTRPCRouter({
       if (!project) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found",
+          message: "Proyek tidak ditemukan",
         });
       }
 
       // Check access: ADMIN/EXECUTIVE or Project Member
-      if (roleGlobal === "ADMIN" || roleGlobal === "EXECUTIVE") {
+      if (isAdminOrExecutive(roleGlobal)) {
         return project;
       }
 
@@ -371,7 +379,7 @@ export const projectRouter = createTRPCRouter({
       if (!isMember) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You are not a member of this project",
+          message: "Anda bukan anggota dari proyek ini",
         });
       }
 
@@ -385,8 +393,13 @@ export const projectRouter = createTRPCRouter({
   update: adminProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        name: z.string().trim().min(1).max(100).optional(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        name: z
+          .string()
+          .trim()
+          .min(1, "Nama proyek wajib diisi")
+          .max(100)
+          .optional(),
         slug: z.string().trim().max(100).optional(),
         description: z.string().trim().max(3000).optional(),
         location: z.string().trim().max(255).optional(),
@@ -411,7 +424,7 @@ export const projectRouter = createTRPCRouter({
       if (!currentProject) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found",
+          message: "Proyek tidak ditemukan",
         });
       }
 
@@ -437,7 +450,7 @@ export const projectRouter = createTRPCRouter({
         if (existing && existing.id !== input.projectId) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Project with this slug already exists",
+            message: "Proyek dengan slug ini sudah terdaftar",
           });
         }
       }
@@ -482,7 +495,7 @@ export const projectRouter = createTRPCRouter({
   delete: strictAdminProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -500,8 +513,8 @@ export const projectRouter = createTRPCRouter({
   addMember: adminProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        userId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        userId: z.string().min(1, "ID Pengguna wajib diisi"),
         role: z.enum(["SUPERVISOR", "ARCHITECT", "FINANCE", "LOGISTIC"]),
       }),
     )
@@ -515,7 +528,7 @@ export const projectRouter = createTRPCRouter({
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "User not found",
+          message: "Pengguna tidak ditemukan",
         });
       }
 
@@ -535,7 +548,7 @@ export const projectRouter = createTRPCRouter({
       if (!project) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found",
+          message: "Proyek tidak ditemukan",
         });
       }
 
@@ -552,7 +565,7 @@ export const projectRouter = createTRPCRouter({
       if (existing) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "User is already a member of this project",
+          message: "Pengguna sudah menjadi anggota proyek ini",
         });
       }
 
@@ -584,7 +597,7 @@ export const projectRouter = createTRPCRouter({
   updateMemberRole: adminProcedure
     .input(
       z.object({
-        memberId: z.string(),
+        memberId: z.string().min(1, "ID Anggota wajib diisi"),
         role: z.enum(["SUPERVISOR", "ARCHITECT", "FINANCE", "LOGISTIC"]),
       }),
     )
@@ -616,7 +629,7 @@ export const projectRouter = createTRPCRouter({
   removeMember: adminProcedure
     .input(
       z.object({
-        memberId: z.string(),
+        memberId: z.string().min(1, "ID Anggota wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -634,29 +647,15 @@ export const projectRouter = createTRPCRouter({
   getMembers: protectedProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
       }),
     )
     .query(async ({ ctx, input }) => {
       const { id: userId, roleGlobal } = ctx.session.user;
 
       // Check access: ADMIN/EXECUTIVE or Project Member
-      if (roleGlobal !== "ADMIN" && roleGlobal !== "EXECUTIVE") {
-        const isMember = await ctx.db.projectMember.findUnique({
-          where: {
-            userId_projectId: {
-              userId,
-              projectId: input.projectId,
-            },
-          },
-        });
-
-        if (!isMember) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "You are not a member of this project",
-          });
-        }
+      if (!isAdminOrExecutive(roleGlobal)) {
+        await requireProjectMembership(ctx.db, userId, input.projectId);
       }
 
       const members = await ctx.db.projectMember.findMany({

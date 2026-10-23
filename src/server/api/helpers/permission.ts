@@ -61,7 +61,7 @@ export async function requireProjectMembership(
   if (!role) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You are not a member of this project",
+      message: "Anda bukan anggota dari proyek ini",
     });
   }
 
@@ -99,7 +99,7 @@ export async function requireProjectRole(
   if (!allowedRoles.includes(role)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: `This action requires one of the following roles: ${allowedRoles.join(", ")}`,
+      message: `Aksi ini memerlukan salah satu dari peran berikut: ${allowedRoles.join(", ")}`,
     });
   }
 
@@ -113,17 +113,22 @@ export async function requireProjectRole(
  * @param entity - Entity with userId field
  * @param currentUserId - Current user's ID
  * @param globalRole - Current user's global role
+ * @param customForbiddenMessage - Optional custom error message in Indonesian
  * @throws TRPCError with code FORBIDDEN if user doesn't own the resource
  *
  * @example
  * const report = await db.dailyReport.findUnique({ where: { id } });
- * requireOwnership(report, ctx.session.user.id, ctx.session.user.roleGlobal);
+ * requireOwnership(report, ctx.session.user.id, ctx.session.user.roleGlobal, "Hanya pembuat laporan yang dapat mengubah data ini");
  * // If we reach here, user owns the report or is ADMIN
  */
 export function requireOwnership(
-  entity: { userId: string } | null | undefined,
+  entity:
+    | { userId?: string | null; requestedById?: string | null }
+    | null
+    | undefined,
   currentUserId: string,
   globalRole: string | null | undefined,
+  customForbiddenMessage?: string,
 ): void {
   // ADMIN bypasses ownership check
   if (globalRole === "ADMIN") {
@@ -133,14 +138,18 @@ export function requireOwnership(
   if (!entity) {
     throw new TRPCError({
       code: "NOT_FOUND",
-      message: "Resource not found",
+      message: "Data tidak ditemukan",
     });
   }
 
-  if (entity.userId !== currentUserId) {
+  const ownerId = entity.userId ?? entity.requestedById;
+
+  if (ownerId !== currentUserId) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "You can only modify your own resources",
+      message:
+        customForbiddenMessage ??
+        "Anda hanya dapat mengubah atau menghapus data milik Anda sendiri",
     });
   }
 }
@@ -156,7 +165,9 @@ export function requireOwnership(
  *   // User has global access
  * }
  */
-export function isAdminOrExecutive(globalRole: GlobalRole): boolean {
+export function isAdminOrExecutive(
+  globalRole: GlobalRole | string | null | undefined,
+): boolean {
   return globalRole === "ADMIN" || globalRole === "EXECUTIVE";
 }
 
@@ -168,17 +179,21 @@ export const isAdminOrCEO = isAdminOrExecutive;
  * Use this for mutations that even EXECUTIVE shouldn't be able to do.
  *
  * @param globalRole - User's global role
+ * @param customMessage - Optional custom error message in Indonesian
  * @throws TRPCError with code FORBIDDEN if user is not ADMIN
  *
  * @example
  * requireAdmin(ctx.session.user.roleGlobal);
  * // Only ADMIN can proceed
  */
-export function requireAdmin(globalRole: GlobalRole): void {
+export function requireAdmin(
+  globalRole: GlobalRole | string | null | undefined,
+  customMessage?: string,
+): void {
   if (globalRole !== "ADMIN") {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Admin access required",
+      message: customMessage ?? "Akses Administrator diperlukan",
     });
   }
 }
@@ -216,7 +231,7 @@ export function checkExecutiveRestriction(
   if (!allowedExecutiveActions.includes(action)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Executive has read-only access to project operations",
+      message: "Eksekutif hanya memiliki akses baca pada operasi proyek",
     });
   }
 }

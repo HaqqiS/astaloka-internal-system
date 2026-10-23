@@ -2,6 +2,10 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { deleteCloudinaryAsset, isValidCloudinaryUrl } from "~/lib/cloudinary";
 import {
+  isAdminOrExecutive,
+  requireOwnership,
+} from "~/server/api/helpers/permission";
+import {
   createTRPCRouter,
   projectProcedure,
   protectedProcedure,
@@ -39,11 +43,10 @@ export const emergencyRouter = createTRPCRouter({
    */
   getAnalytics: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.session.user;
-    const isAdminOrExecutive =
-      user.roleGlobal === "ADMIN" || user.roleGlobal === "EXECUTIVE";
+    const isGlobalViewer = isAdminOrExecutive(user.roleGlobal);
 
     const projects = await ctx.db.project.findMany({
-      where: isAdminOrExecutive
+      where: isGlobalViewer
         ? { status: "ACTIVE" }
         : {
             status: "ACTIVE",
@@ -201,9 +204,16 @@ export const emergencyRouter = createTRPCRouter({
   addBalance: financeProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        amount: z.number().positive(),
-        description: z.string().trim().min(1).max(2000),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        amount: z
+          .number()
+          .positive("Jumlah harus lebih dari 0")
+          .max(10_000_000_000, "Jumlah melebihi batas maksimal"),
+        description: z
+          .string()
+          .trim()
+          .min(1, "Keterangan wajib diisi")
+          .max(2000, "Keterangan maksimal 2000 karakter"),
         proofPublicId: z
           .string()
           .refine((p) => p.startsWith("astaloka/") && !p.includes(".."), {
@@ -271,9 +281,16 @@ export const emergencyRouter = createTRPCRouter({
   request: mandorProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        amount: z.number().positive(),
-        description: z.string().trim().min(1).max(2000),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        amount: z
+          .number()
+          .positive("Jumlah harus lebih dari 0")
+          .max(10_000_000_000, "Jumlah melebihi batas maksimal"),
+        description: z
+          .string()
+          .trim()
+          .min(1, "Keterangan wajib diisi")
+          .max(2000, "Keterangan maksimal 2000 karakter"),
         proofPublicId: z
           .string()
           .refine((p) => p.startsWith("astaloka/") && !p.includes(".."), {
@@ -298,7 +315,7 @@ export const emergencyRouter = createTRPCRouter({
         if (!fund) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Emergency fund not found for this project",
+            message: "Kas darurat belum dibuat untuk proyek ini",
           });
         }
 
@@ -358,8 +375,8 @@ export const emergencyRouter = createTRPCRouter({
   verify: financeProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        transactionId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        transactionId: z.string().min(1, "ID Transaksi wajib diisi"),
         status: z.enum(["REVIEWED", "UNREVIEWED"]),
       }),
     )
@@ -375,7 +392,7 @@ export const emergencyRouter = createTRPCRouter({
       if (!transaction) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Transaction not found",
+          message: "Transaksi tidak ditemukan",
         });
       }
 
@@ -383,7 +400,7 @@ export const emergencyRouter = createTRPCRouter({
       if (transaction.fund.projectId !== ctx.projectId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Transaction does not belong to this project",
+          message: "Transaksi ini bukan bagian dari proyek ini",
         });
       }
 
@@ -446,10 +463,17 @@ export const emergencyRouter = createTRPCRouter({
   edit: projectProcedure(["SUPERVISOR", "FINANCE"])
     .input(
       z.object({
-        projectId: z.string(),
-        transactionId: z.string(),
-        amount: z.number().positive(),
-        description: z.string().trim().min(1).max(2000),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        transactionId: z.string().min(1, "ID Transaksi wajib diisi"),
+        amount: z
+          .number()
+          .positive("Jumlah harus lebih dari 0")
+          .max(10_000_000_000, "Jumlah melebihi batas maksimal"),
+        description: z
+          .string()
+          .trim()
+          .min(1, "Keterangan wajib diisi")
+          .max(2000, "Keterangan maksimal 2000 karakter"),
         proofPublicId: z
           .string()
           .refine(
@@ -470,7 +494,6 @@ export const emergencyRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { id: userId, roleGlobal } = ctx.session.user;
-      const isAdminUser = roleGlobal === "ADMIN";
 
       // Get the existing transaction
       const transaction = await ctx.db.emergencyTransaction.findUnique({
@@ -481,7 +504,7 @@ export const emergencyRouter = createTRPCRouter({
       if (!transaction) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Transaction not found",
+          message: "Transaksi tidak ditemukan",
         });
       }
 
@@ -489,17 +512,17 @@ export const emergencyRouter = createTRPCRouter({
       if (transaction.fund.projectId !== ctx.projectId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Transaction does not belong to this project",
+          message: "Transaksi ini bukan bagian dari proyek ini",
         });
       }
 
       // Ownership check: only the creator or ADMIN can edit
-      if (!isAdminUser && transaction.requestedById !== userId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda hanya bisa mengedit transaksi milik sendiri",
-        });
-      }
+      requireOwnership(
+        transaction,
+        userId,
+        roleGlobal,
+        "Anda hanya bisa mengedit transaksi milik sendiri",
+      );
 
       // Status check: WITHDRAWAL can only be edited if UNREVIEWED
       if (
@@ -634,13 +657,12 @@ export const emergencyRouter = createTRPCRouter({
   delete: projectProcedure(["SUPERVISOR", "FINANCE"])
     .input(
       z.object({
-        projectId: z.string(),
-        transactionId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        transactionId: z.string().min(1, "ID Transaksi wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id: userId, roleGlobal } = ctx.session.user;
-      const isAdminUser = roleGlobal === "ADMIN";
 
       // Get the existing transaction
       const transaction = await ctx.db.emergencyTransaction.findUnique({
@@ -651,7 +673,7 @@ export const emergencyRouter = createTRPCRouter({
       if (!transaction) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Transaction not found",
+          message: "Transaksi tidak ditemukan",
         });
       }
 
@@ -659,17 +681,17 @@ export const emergencyRouter = createTRPCRouter({
       if (transaction.fund.projectId !== ctx.projectId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Transaction does not belong to this project",
+          message: "Transaksi ini bukan bagian dari proyek ini",
         });
       }
 
       // Ownership check: only the creator or ADMIN can delete
-      if (!isAdminUser && transaction.requestedById !== userId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Anda hanya bisa menghapus transaksi milik sendiri",
-        });
-      }
+      requireOwnership(
+        transaction,
+        userId,
+        roleGlobal,
+        "Anda hanya bisa menghapus transaksi milik sendiri",
+      );
 
       // Status check: WITHDRAWAL can only be deleted if UNREVIEWED
       if (

@@ -418,7 +418,7 @@ export function ReportForm({
         }
       } catch (err) {
         console.error(err);
-        toast.error("Terjadi kesalahan saat menyimpan laporan");
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });

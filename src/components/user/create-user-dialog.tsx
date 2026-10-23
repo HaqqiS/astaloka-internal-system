@@ -72,6 +72,8 @@ export function CreateUserDialog({
     useState<Country>(DEFAULT_COUNTRY);
   const [showPassword, setShowPassword] = useState(false);
 
+  const createUser = useCreateUserWithCredentials();
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -98,20 +100,47 @@ export function CreateUserDialog({
         formattedPhone = `${selectedCountry.dialCode}${normalized}`;
       }
 
-      createUser.mutate({
-        name: value.name.trim(),
-        email: value.email.trim().toLowerCase() || undefined,
-        phoneNumber: formattedPhone,
-        password: value.password,
-        roleGlobal: value.role,
-        projectAssignment:
-          value.assignProject && value.projectId
-            ? {
-                projectId: value.projectId,
-                role: value.projectRole,
-              }
-            : undefined,
-      });
+      try {
+        await createUser.mutateAsync({
+          name: value.name.trim(),
+          email: value.email.trim().toLowerCase() || undefined,
+          phoneNumber: formattedPhone,
+          password: value.password,
+          roleGlobal: value.role,
+          projectAssignment:
+            value.assignProject && value.projectId
+              ? {
+                  projectId: value.projectId,
+                  role: value.projectRole,
+                }
+              : undefined,
+        });
+
+        const identifier = value.phone.trim() || value.email.trim();
+        const summaryText = `Akun Sandaran Internal System:
+Nama: ${value.name.trim()}
+Login: ${identifier}
+Kata Sandi: ${value.password}
+Peran: ${value.role}
+Tautan: ${typeof window !== "undefined" ? window.location.origin : ""}/login`;
+
+        if (navigator.clipboard) {
+          void navigator.clipboard.writeText(summaryText);
+          toast.success("Pengguna berhasil dibuat!", {
+            description:
+              "Detail login telah disalin ke clipboard untuk dikirimkan via chat.",
+          });
+        } else {
+          toast.success("Pengguna berhasil dibuat!");
+        }
+
+        form.reset();
+        setSelectedCountry(DEFAULT_COUNTRY);
+        setShowPassword(false);
+        onOpenChange(false);
+      } catch {
+        // Ditangani secara global oleh mutationCache
+      }
     },
   });
 
@@ -122,38 +151,6 @@ export function CreateUserDialog({
 
   const { data: projects } = useProjectList({
     enabled: open && isAssignProjectActive,
-  });
-
-  const createUser = useCreateUserWithCredentials({
-    onSuccess: () => {
-      const currentValues = form.state.values;
-      const identifier =
-        currentValues.phone.trim() || currentValues.email.trim();
-      const summaryText = `Akun Sandaran Internal System:
-Nama: ${currentValues.name.trim()}
-Login: ${identifier}
-Kata Sandi: ${currentValues.password}
-Peran: ${currentValues.role}
-Tautan: ${typeof window !== "undefined" ? window.location.origin : ""}/login`;
-
-      if (navigator.clipboard) {
-        void navigator.clipboard.writeText(summaryText);
-        toast.success("Pengguna berhasil dibuat!", {
-          description:
-            "Detail login telah disalin ke clipboard untuk dikirimkan via chat.",
-        });
-      } else {
-        toast.success("Pengguna berhasil dibuat!");
-      }
-
-      form.reset();
-      setSelectedCountry(DEFAULT_COUNTRY);
-      setShowPassword(false);
-      onOpenChange(false);
-    },
-    onError: (err) => {
-      toast.error(err.message || "Gagal membuat pengguna");
-    },
   });
 
   return (

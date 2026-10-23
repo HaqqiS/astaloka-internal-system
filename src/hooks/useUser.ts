@@ -73,28 +73,19 @@ export function useDeleteUser() {
 
 export function useBulkApprove(options?: {
   onSuccess?: (data: { count: number }) => void;
-  onError?: (error: { message: string }) => void;
 }) {
   const utils = api.useUtils();
   return api.user.bulkApprove.useMutation({
     onSuccess: (data) => {
       void utils.user.invalidate();
       void utils.dashboard.invalidate();
-      if (options?.onSuccess) {
-        options.onSuccess(data);
-      }
-    },
-    onError: (error) => {
-      if (options?.onError) {
-        options.onError(error);
-      }
+      options?.onSuccess?.(data);
     },
   });
 }
 
 export function useCreateUserWithCredentials(options?: {
   onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
 }) {
   const utils = api.useUtils();
   return api.user.createUserWithCredentials.useMutation({
@@ -103,16 +94,10 @@ export function useCreateUserWithCredentials(options?: {
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
     },
-    onError: (error) => {
-      options?.onError?.(error);
-    },
   });
 }
 
-export function useUpdateUser(options?: {
-  onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
-}) {
+export function useUpdateUser(options?: { onSuccess?: () => void }) {
   const utils = api.useUtils();
   return api.user.updateUser.useMutation({
     onSuccess: () => {
@@ -120,16 +105,10 @@ export function useUpdateUser(options?: {
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
     },
-    onError: (error) => {
-      options?.onError?.(error);
-    },
   });
 }
 
-export function useUpdateProfile(options?: {
-  onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
-}) {
+export function useUpdateProfile(options?: { onSuccess?: () => void }) {
   const utils = api.useUtils();
   return api.user.updateProfile.useMutation({
     onSuccess: () => {
@@ -137,9 +116,6 @@ export function useUpdateProfile(options?: {
       void utils.project.invalidate();
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
-    },
-    onError: (error) => {
-      options?.onError?.(error);
     },
   });
 }

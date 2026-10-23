@@ -57,6 +57,7 @@ export function MemberManagement({ projectId }: MemberManagementProps) {
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<ProjectRole>("SUPERVISOR");
+  const [userSelectError, setUserSelectError] = useState<string | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<{
     id: string;
     name: string | null;
@@ -64,9 +65,10 @@ export function MemberManagement({ projectId }: MemberManagementProps) {
 
   const handleAddMember = async () => {
     if (!selectedUserId) {
-      toast.error("Silakan pilih pengguna");
+      setUserSelectError("Silakan pilih pengguna terlebih dahulu");
       return;
     }
+    setUserSelectError(null);
 
     try {
       await addMember.mutateAsync({
@@ -122,10 +124,18 @@ export function MemberManagement({ projectId }: MemberManagementProps) {
             <Label>Pilih Pengguna</Label>
             <div>
               <UserSelect
-                onSelect={(userId) => setSelectedUserId(userId)}
+                onSelect={(userId) => {
+                  setSelectedUserId(userId);
+                  if (userId) setUserSelectError(null);
+                }}
                 disabled={addMember.isPending}
               />
             </div>
+            {userSelectError && (
+              <p className="text-xs text-destructive font-medium">
+                {userSelectError}
+              </p>
+            )}
           </div>
           <div className="w-full space-y-2 sm:w-40">
             <Label>Peran</Label>

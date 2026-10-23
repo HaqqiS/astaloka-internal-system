@@ -1,11 +1,13 @@
 import { TRPCError } from "@trpc/server";
 import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { z } from "zod";
+import { requireAdmin } from "~/server/api/helpers/permission";
 import {
   adminOrCeoProcedure,
   adminProcedure,
   createTRPCRouter,
   protectedProcedure,
+  strictAdminProcedure,
 } from "~/server/api/trpc";
 
 export const userRouter = createTRPCRouter({
@@ -190,21 +192,19 @@ export const userRouter = createTRPCRouter({
       const approverId = ctx.session.user.id;
 
       // Validation: only ADMIN can assign ADMIN role
-      if (roleGlobal === "ADMIN" && ctx.session.user.roleGlobal !== "ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Administrator yang dapat memberikan peran ADMIN",
-        });
+      if (roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat memberikan peran ADMIN",
+        );
       }
 
       // Validation: cannot approve self to ADMIN unless already ADMIN
       if (roleGlobal === "ADMIN" && userId === approverId) {
-        if (ctx.session.user.roleGlobal !== "ADMIN") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Cannot self-promote to ADMIN",
-          });
-        }
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Tidak dapat mempromosikan diri sendiri menjadi Administrator",
+        );
       }
 
       // Hierarchy protection: fetch target user
@@ -216,20 +216,16 @@ export const userRouter = createTRPCRouter({
       if (!targetUser) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "User not found",
+          message: "Pengguna tidak ditemukan",
         });
       }
 
       // Only ADMIN can modify or demote an existing ADMIN user
-      if (
-        targetUser.roleGlobal === "ADMIN" &&
-        ctx.session.user.roleGlobal !== "ADMIN"
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat menyetujui atau mengubah data akun Administrator lain",
-        });
+      if (targetUser.roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat menyetujui atau mengubah data akun Administrator lain",
+        );
       }
 
       // Update user global role & status
@@ -253,7 +249,7 @@ export const userRouter = createTRPCRouter({
         if (!project) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Project not found",
+            message: "Proyek tidak ditemukan",
           });
         }
 
@@ -292,7 +288,7 @@ export const userRouter = createTRPCRouter({
       if (userId === reviewerId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Cannot reject yourself",
+          message: "Tidak dapat menolak akun sendiri",
         });
       }
 
@@ -302,15 +298,11 @@ export const userRouter = createTRPCRouter({
         select: { roleGlobal: true },
       });
 
-      if (
-        targetUser?.roleGlobal === "ADMIN" &&
-        ctx.session.user.roleGlobal !== "ADMIN"
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat menolak akun Administrator lain",
-        });
+      if (targetUser?.roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat menolak akun Administrator lain",
+        );
       }
 
       return ctx.db.user.update({
@@ -339,11 +331,11 @@ export const userRouter = createTRPCRouter({
       const approverId = ctx.session.user.id;
 
       // Validation: only ADMIN can assign ADMIN role
-      if (roleGlobal === "ADMIN" && ctx.session.user.roleGlobal !== "ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Hanya Administrator yang dapat memberikan peran ADMIN",
-        });
+      if (roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat memberikan peran ADMIN",
+        );
       }
 
       // Filter out self if trying to approve self to ADMIN
@@ -355,7 +347,7 @@ export const userRouter = createTRPCRouter({
       if (validUserIds.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "No valid users to approve",
+          message: "Tidak ada pengguna valid yang dapat disetujui",
         });
       }
 
@@ -396,8 +388,8 @@ export const userRouter = createTRPCRouter({
   /**
    * Delete user (soft delete for inactive users only)
    */
-  deleteUser: adminProcedure
-    .input(z.object({ userId: z.string() }))
+  deleteUser: strictAdminProcedure
+    .input(z.object({ userId: z.string().min(1, "ID Pengguna wajib diisi") }))
     .mutation(async ({ ctx, input }) => {
       const { userId } = input;
       const currentUserId = ctx.session.user.id;
@@ -406,7 +398,7 @@ export const userRouter = createTRPCRouter({
       if (userId === currentUserId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Cannot delete yourself",
+          message: "Tidak dapat menghapus akun sendiri",
         });
       }
 
@@ -419,27 +411,24 @@ export const userRouter = createTRPCRouter({
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "User not found",
+          message: "Pengguna tidak ditemukan",
         });
       }
 
       // Validation: only ADMIN can delete an ADMIN user
-      if (
-        user.roleGlobal === "ADMIN" &&
-        ctx.session.user.roleGlobal !== "ADMIN"
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat menghapus akun Administrator lain",
-        });
+      if (user.roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat menghapus akun Administrator lain",
+        );
       }
 
       // Validation: Only delete inactive users
       if (user.isActive) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Can only delete inactive users. Reject the user first.",
+          message:
+            "Hanya pengguna nonaktif yang dapat dihapus. Tolak akun pengguna terlebih dahulu.",
         });
       }
 
@@ -483,12 +472,11 @@ export const userRouter = createTRPCRouter({
       const phoneNumber = input.phoneNumber?.trim();
 
       // Hierarchy validation: only ADMIN can create an ADMIN account
-      if (roleGlobal === "ADMIN" && ctx.session.user.roleGlobal !== "ADMIN") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat membuat akun dengan peran Administrator",
-        });
+      if (roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat membuat akun dengan peran Administrator",
+        );
       }
 
       if (!email && !phoneNumber) {
@@ -645,27 +633,18 @@ export const userRouter = createTRPCRouter({
       }
 
       // 1b. Hierarchy protection: only ADMIN can modify an ADMIN user or promote to ADMIN
-      if (
-        targetUser.roleGlobal === "ADMIN" &&
-        ctx.session.user.roleGlobal !== "ADMIN"
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat mengubah data akun Administrator lain",
-        });
+      if (targetUser.roleGlobal === "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat mengubah data akun Administrator lain",
+        );
       }
 
-      if (
-        roleGlobal === "ADMIN" &&
-        targetUser.roleGlobal !== "ADMIN" &&
-        ctx.session.user.roleGlobal !== "ADMIN"
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Hanya Administrator yang dapat menetapkan peran Administrator",
-        });
+      if (roleGlobal === "ADMIN" && targetUser.roleGlobal !== "ADMIN") {
+        requireAdmin(
+          ctx.session.user.roleGlobal,
+          "Hanya Administrator yang dapat menetapkan peran Administrator",
+        );
       }
 
       // 2. Prevent self-demotion from ADMIN

@@ -6,7 +6,10 @@ import {
   generateSignedDownloadUrl,
   isValidCloudinaryUrl,
 } from "~/lib/cloudinary";
-import { requireOwnership } from "~/server/api/helpers/permission";
+import {
+  isAdminOrExecutive,
+  requireOwnership,
+} from "~/server/api/helpers/permission";
 import {
   createTRPCRouter,
   projectProcedure,
@@ -41,11 +44,10 @@ export const documentRouter = createTRPCRouter({
    */
   getAnalytics: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.session.user;
-    const isAdminOrExecutive =
-      user.roleGlobal === "ADMIN" || user.roleGlobal === "EXECUTIVE";
+    const isGlobalViewer = isAdminOrExecutive(user.roleGlobal);
 
     const projects = await ctx.db.project.findMany({
-      where: isAdminOrExecutive
+      where: isGlobalViewer
         ? { status: "ACTIVE" }
         : {
             status: "ACTIVE",
@@ -88,31 +90,66 @@ export const documentRouter = createTRPCRouter({
       recentCounts.set(doc.projectId, doc._count.id);
     });
 
-    const result = await Promise.all(
-      projects.map(async (project) => {
-        const recentDocuments = await ctx.db.projectDocument.findMany({
-          where: { projectId: project.id },
-          orderBy: { createdAt: "desc" },
-          take: 3,
-          select: {
-            id: true,
-            title: true,
-            fileName: true,
-            fileType: true,
-            createdAt: true,
-          },
-        });
+    const allRecentDocuments = await ctx.db.projectDocument.findMany({
+      where: { projectId: { in: projectIds } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        fileName: true,
+        fileType: true,
+        createdAt: true,
+      },
+    });
 
-        return {
-          id: project.id,
-          name: project.name,
-          slug: project.slug,
-          totalDocuments: project._count.documents,
-          recentUploadsCount: recentCounts.get(project.id) || 0,
-          recentDocuments,
-        };
-      }),
-    );
+    const recentDocsByProject = new Map<
+      string,
+      Array<{
+        id: string;
+        title: string | null;
+        fileName: string;
+        fileType:
+          | "DESIGN"
+          | "DRAWING"
+          | "REFERENCE"
+          | "SPECIFICATION"
+          | "OTHER";
+        createdAt: Date;
+      }>
+    >();
+
+    for (const doc of allRecentDocuments) {
+      const list = recentDocsByProject.get(doc.projectId);
+      if (!list) {
+        recentDocsByProject.set(doc.projectId, [
+          {
+            id: doc.id,
+            title: doc.title,
+            fileName: doc.fileName,
+            fileType: doc.fileType,
+            createdAt: doc.createdAt,
+          },
+        ]);
+      } else if (list.length < 3) {
+        list.push({
+          id: doc.id,
+          title: doc.title,
+          fileName: doc.fileName,
+          fileType: doc.fileType,
+          createdAt: doc.createdAt,
+        });
+      }
+    }
+
+    const result = projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      slug: project.slug,
+      totalDocuments: project._count.documents,
+      recentUploadsCount: recentCounts.get(project.id) || 0,
+      recentDocuments: recentDocsByProject.get(project.id) ?? [],
+    }));
 
     return result;
   }),
@@ -127,8 +164,12 @@ export const documentRouter = createTRPCRouter({
   upload: architectProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        fileName: z.string().trim().min(1).max(255),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        fileName: z
+          .string()
+          .trim()
+          .min(1, "Nama file tidak boleh kosong")
+          .max(255),
         fileType: z.enum([
           "DESIGN",
           "DRAWING",
@@ -138,13 +179,13 @@ export const documentRouter = createTRPCRouter({
         ]),
         publicId: z
           .string()
-          .min(1)
+          .min(1, "Public ID wajib diisi")
           .refine((p) => p.startsWith("astaloka/") && !p.includes(".."), {
             message: "Format publicId tidak valid",
           }),
         url: z
           .string()
-          .url()
+          .url("Format URL tidak valid")
           .refine(isValidCloudinaryUrl, {
             message: "URL dokumen harus berupa URL Cloudinary yang valid",
           }),
@@ -193,7 +234,7 @@ export const documentRouter = createTRPCRouter({
   getByProject: projectMemberProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
         fileType: z
           .enum(["DESIGN", "DRAWING", "REFERENCE", "SPECIFICATION", "OTHER"])
           .optional(),
@@ -229,8 +270,8 @@ export const documentRouter = createTRPCRouter({
   getById: projectMemberProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        documentId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        documentId: z.string().min(1, "ID Dokumen wajib diisi"),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -253,7 +294,7 @@ export const documentRouter = createTRPCRouter({
       if (!document) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Document not found",
+          message: "Dokumen tidak ditemukan",
         });
       }
 
@@ -272,8 +313,8 @@ export const documentRouter = createTRPCRouter({
   )
     .input(
       z.object({
-        projectId: z.string(),
-        documentId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        documentId: z.string().min(1, "ID Dokumen wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -287,7 +328,7 @@ export const documentRouter = createTRPCRouter({
       if (!document) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Document not found",
+          message: "Dokumen tidak ditemukan",
         });
       }
 
@@ -320,8 +361,8 @@ export const documentRouter = createTRPCRouter({
   update: architectProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        documentId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        documentId: z.string().min(1, "ID Dokumen wajib diisi"),
         title: z.string().trim().max(255).nullable().optional(),
         description: z.string().trim().max(3000).nullable().optional(),
         version: z.string().trim().max(50).nullable().optional(),
@@ -337,7 +378,7 @@ export const documentRouter = createTRPCRouter({
           .optional(),
         url: z
           .string()
-          .url()
+          .url("Format URL tidak valid")
           .refine(isValidCloudinaryUrl, {
             message: "URL dokumen harus berupa URL Cloudinary yang valid",
           })
@@ -359,7 +400,7 @@ export const documentRouter = createTRPCRouter({
       if (!document) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Document not found",
+          message: "Dokumen tidak ditemukan",
         });
       }
 
@@ -368,6 +409,7 @@ export const documentRouter = createTRPCRouter({
         document,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pemilik dokumen yang dapat mengubah dokumen ini",
       );
 
       let oldPublicId: string | null = null;
@@ -432,8 +474,8 @@ export const documentRouter = createTRPCRouter({
   delete: architectProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        documentId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        documentId: z.string().min(1, "ID Dokumen wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -448,7 +490,7 @@ export const documentRouter = createTRPCRouter({
       if (!document) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Document not found",
+          message: "Dokumen tidak ditemukan",
         });
       }
 
@@ -457,6 +499,7 @@ export const documentRouter = createTRPCRouter({
         document,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pemilik dokumen yang dapat menghapus dokumen ini",
       );
 
       // Delete asset from Cloudinary to prevent orphaned storage

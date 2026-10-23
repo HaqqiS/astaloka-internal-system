@@ -67,15 +67,7 @@ export function UsersClient() {
     );
   }, [users, searchQuery]);
 
-  const bulkApprove = useBulkApprove({
-    onSuccess: (data) => {
-      toast.success(`Berhasil menyetujui ${data.count} pengguna`);
-      setRowSelection({});
-    },
-    onError: (error) => {
-      toast.error(error.message || "Gagal menyetujui pengguna");
-    },
-  });
+  const bulkApprove = useBulkApprove();
 
   const handleApprove = (user: UserListItem) => {
     setSelectedUser(user);
@@ -97,16 +89,22 @@ export function UsersClient() {
     setDeleteDialogOpen(true);
   };
 
-  const handleBulkApprove = () => {
+  const handleBulkApprove = async () => {
     const selectedIds = Object.keys(rowSelection).filter(
       (id) => rowSelection[id],
     );
     if (selectedIds.length === 0) return;
 
-    bulkApprove.mutate({
-      userIds: selectedIds,
-      roleGlobal: "USER",
-    });
+    try {
+      const data = await bulkApprove.mutateAsync({
+        userIds: selectedIds,
+        roleGlobal: "USER",
+      });
+      toast.success(`Berhasil menyetujui ${data.count} pengguna`);
+      setRowSelection({});
+    } catch {
+      // Ditangani secara global oleh mutationCache
+    }
   };
 
   const columns = getUserColumnsWithActions({

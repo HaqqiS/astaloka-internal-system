@@ -13,10 +13,7 @@ export function useCommentsByReport(projectId: string, reportId: string) {
   );
 }
 
-export function useCreateComment(options?: {
-  onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
-}) {
+export function useCreateComment(options?: { onSuccess?: () => void }) {
   const utils = api.useUtils();
   return api.comment.create.useMutation({
     onSuccess: (_data, variables) => {
@@ -32,16 +29,10 @@ export function useCreateComment(options?: {
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
     },
-    onError: (error) => {
-      options?.onError?.(error);
-    },
   });
 }
 
-export function useUpdateComment(options?: {
-  onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
-}) {
+export function useUpdateComment(options?: { onSuccess?: () => void }) {
   const utils = api.useUtils();
   return api.comment.update.useMutation({
     onSuccess: () => {
@@ -51,16 +42,10 @@ export function useUpdateComment(options?: {
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
     },
-    onError: (error) => {
-      options?.onError?.(error);
-    },
   });
 }
 
-export function useDeleteComment(options?: {
-  onSuccess?: () => void;
-  onError?: (error: { message: string }) => void;
-}) {
+export function useDeleteComment(options?: { onSuccess?: () => void }) {
   const utils = api.useUtils();
   return api.comment.delete.useMutation({
     onSuccess: (_data, variables) => {
@@ -75,9 +60,6 @@ export function useDeleteComment(options?: {
       });
       void utils.dashboard.invalidate();
       options?.onSuccess?.();
-    },
-    onError: (error) => {
-      options?.onError?.(error);
     },
   });
 }

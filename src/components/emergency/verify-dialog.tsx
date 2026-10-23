@@ -45,13 +45,8 @@ export function VerifyDialog({
           : "Transaksi berhasil direview",
       );
       onOpenChange(false);
-    } catch (error) {
-      toast.error(
-        isUndo
-          ? "Gagal membatalkan review transaksi"
-          : "Gagal mereview transaksi",
-      );
-      console.error(error);
+    } catch {
+      // Error toast ditangani secara global oleh mutationCache di query-client.ts
     }
   };
 

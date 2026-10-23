@@ -38,9 +38,13 @@ export const commentRouter = createTRPCRouter({
   create: commentProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        reportId: z.string(),
-        content: z.string().trim().min(1).max(2000),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        reportId: z.string().min(1, "ID Laporan wajib diisi"),
+        content: z
+          .string()
+          .trim()
+          .min(1, "Komentar tidak boleh kosong")
+          .max(2000, "Komentar maksimal 2000 karakter"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -55,7 +59,7 @@ export const commentRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Report not found in this project",
+          message: "Laporan tidak ditemukan dalam proyek ini",
         });
       }
 
@@ -87,8 +91,8 @@ export const commentRouter = createTRPCRouter({
   getByReport: projectMemberProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        reportId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        reportId: z.string().min(1, "ID Laporan wajib diisi"),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -103,7 +107,7 @@ export const commentRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Report not found in this project",
+          message: "Laporan tidak ditemukan dalam proyek ini",
         });
       }
 
@@ -136,9 +140,13 @@ export const commentRouter = createTRPCRouter({
   update: commentProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        commentId: z.string(),
-        content: z.string().trim().min(1).max(2000),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        commentId: z.string().min(1, "ID Komentar wajib diisi"),
+        content: z
+          .string()
+          .trim()
+          .min(1, "Komentar tidak boleh kosong")
+          .max(2000, "Komentar maksimal 2000 karakter"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -153,7 +161,7 @@ export const commentRouter = createTRPCRouter({
       if (!comment) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Comment not found",
+          message: "Komentar tidak ditemukan",
         });
       }
 
@@ -161,7 +169,7 @@ export const commentRouter = createTRPCRouter({
       if (comment.report.projectId !== ctx.projectId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Comment does not belong to this project",
+          message: "Komentar ini bukan bagian dari proyek ini",
         });
       }
 
@@ -170,6 +178,7 @@ export const commentRouter = createTRPCRouter({
         comment,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat komentar yang dapat mengubah komentar ini",
       );
 
       const updated = await ctx.db.reportComment.update({
@@ -199,8 +208,8 @@ export const commentRouter = createTRPCRouter({
   delete: commentProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        commentId: z.string(),
+        projectId: z.string().min(1, "ID Proyek wajib diisi"),
+        commentId: z.string().min(1, "ID Komentar wajib diisi"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -215,7 +224,7 @@ export const commentRouter = createTRPCRouter({
       if (!comment) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Comment not found",
+          message: "Komentar tidak ditemukan",
         });
       }
 
@@ -223,7 +232,7 @@ export const commentRouter = createTRPCRouter({
       if (comment.report.projectId !== ctx.projectId) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Comment does not belong to this project",
+          message: "Komentar ini bukan bagian dari proyek ini",
         });
       }
 
@@ -232,6 +241,7 @@ export const commentRouter = createTRPCRouter({
         comment,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat komentar yang dapat menghapus komentar ini",
       );
 
       await ctx.db.reportComment.delete({

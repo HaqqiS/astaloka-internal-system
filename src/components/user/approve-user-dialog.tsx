@@ -58,6 +58,8 @@ export function ApproveUserDialog({
   open,
   onOpenChange,
 }: ApproveUserDialogProps) {
+  const approve = useApproveUser();
+
   const form = useForm({
     defaultValues: {
       role: "USER" as "USER" | "EXECUTIVE" | "ADMIN",
@@ -75,8 +77,8 @@ export function ApproveUserDialog({
     onSubmit: async ({ value }) => {
       if (!user) return;
 
-      approve.mutate(
-        {
+      try {
+        await approve.mutateAsync({
           userId: user.id,
           roleGlobal: value.role,
           projectAssignment:
@@ -86,18 +88,13 @@ export function ApproveUserDialog({
                   role: value.projectRole,
                 }
               : undefined,
-        },
-        {
-          onSuccess: () => {
-            toast.success(`${user.name} berhasil disetujui`);
-            onOpenChange(false);
-            form.reset();
-          },
-          onError: (error) => {
-            toast.error(error.message || "Gagal menyetujui pengguna");
-          },
-        },
-      );
+        });
+        toast.success(`${user.name} berhasil disetujui`);
+        onOpenChange(false);
+        form.reset();
+      } catch {
+        // Ditangani secara global oleh mutationCache
+      }
     },
   });
 
@@ -109,8 +106,6 @@ export function ApproveUserDialog({
   const { data: projects } = useProjectList({
     enabled: open && isAssignProjectActive,
   });
-
-  const approve = useApproveUser();
 
   return (
     <ResponsiveFormDialog

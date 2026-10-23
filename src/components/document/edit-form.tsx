@@ -158,7 +158,7 @@ export function EditForm({
 
         toast.success("Dokumen berhasil diperbarui");
         onSuccess?.();
-      } catch (error) {
+      } catch {
         if (newPublicId) {
           try {
             await remove(newPublicId);
@@ -166,9 +166,7 @@ export function EditForm({
             console.error("Failed to cleanup Cloudinary asset:", cleanupErr);
           }
         }
-        toast.error(
-          error instanceof Error ? error.message : "Gagal memperbarui dokumen",
-        );
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });

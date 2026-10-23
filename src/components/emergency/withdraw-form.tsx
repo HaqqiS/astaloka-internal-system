@@ -133,11 +133,8 @@ export function WithdrawForm({
 
         form.reset();
         onSuccess?.();
-      } catch (error) {
-        toast.error(
-          isEdit ? "Gagal memperbarui transaksi" : "Gagal mengajukan dana",
-        );
-        console.error(error);
+      } catch {
+        // Error toast ditangani secara global oleh mutationCache di query-client.ts
       }
     },
   });

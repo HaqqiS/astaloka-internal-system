@@ -32,14 +32,7 @@ interface CommentItemProps {
 export function CommentItem({ comment, projectId }: CommentItemProps) {
   const session = useSessionStore((state) => state.session);
 
-  const deleteComment = useDeleteComment({
-    onSuccess: () => {
-      toast.success("Komentar dihapus");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const deleteComment = useDeleteComment();
 
   // Check permissions
   const isAuthor = session?.user?.id === comment.userId;
@@ -168,12 +161,18 @@ export function CommentItem({ comment, projectId }: CommentItemProps) {
           onOpenChange={setShowDeleteDialog}
           title="Hapus Komentar"
           description="Apakah Anda yakin ingin menghapus komentar ini? Tindakan ini tidak dapat dibatalkan."
-          onConfirm={() =>
-            deleteComment.mutate({
-              projectId,
-              commentId: comment.id,
-            })
-          }
+          onConfirm={async () => {
+            try {
+              await deleteComment.mutateAsync({
+                projectId,
+                commentId: comment.id,
+              });
+              toast.success("Komentar berhasil dihapus");
+              setShowDeleteDialog(false);
+            } catch {
+              // Ditangani secara global oleh mutationCache
+            }
+          }}
           isPending={deleteComment.isPending}
         />
       )}

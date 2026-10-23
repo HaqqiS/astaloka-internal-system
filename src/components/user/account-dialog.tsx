@@ -107,16 +107,34 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
         ? `${selectedCountry.dialCode}${value.phone.replace(/\D/g, "").replace(/^0+/, "")}`
         : "";
 
-      updateProfile.mutate({
-        name: value.name.trim(),
-        email: value.email.trim() || undefined,
-        phoneNumber: formattedPhone || undefined,
-        currentPassword:
-          value.changePassword && value.currentPassword?.trim()
-            ? value.currentPassword.trim()
-            : undefined,
-        password: value.changePassword ? value.newPassword.trim() : undefined,
-      });
+      try {
+        await updateProfile.mutateAsync({
+          name: value.name.trim(),
+          email: value.email.trim() || undefined,
+          phoneNumber: formattedPhone || undefined,
+          currentPassword:
+            value.changePassword && value.currentPassword?.trim()
+              ? value.currentPassword.trim()
+              : undefined,
+          password: value.changePassword ? value.newPassword.trim() : undefined,
+        });
+
+        if (
+          value.changePassword &&
+          value.newPassword.trim() &&
+          navigator.clipboard
+        ) {
+          void navigator.clipboard.writeText(value.newPassword);
+          toast.success("Profil dan kata sandi berhasil diperbarui!", {
+            description: "Kata sandi baru telah disalin ke clipboard Anda.",
+          });
+        } else {
+          toast.success("Profil akun berhasil diperbarui!");
+        }
+        onOpenChange(false);
+      } catch {
+        // Ditangani secara global oleh mutationCache
+      }
     },
   });
 
@@ -139,27 +157,7 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
     }
   }, [currentUser, open, form]);
 
-  const updateProfile = useUpdateProfile({
-    onSuccess: () => {
-      const currentValues = form.state.values;
-      if (
-        currentValues.changePassword &&
-        currentValues.newPassword.trim() &&
-        navigator.clipboard
-      ) {
-        void navigator.clipboard.writeText(currentValues.newPassword);
-        toast.success("Profil dan kata sandi berhasil diperbarui!", {
-          description: "Kata sandi baru telah disalin ke clipboard Anda.",
-        });
-      } else {
-        toast.success("Profil akun berhasil diperbarui!");
-      }
-      onOpenChange(false);
-    },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memperbarui profil akun");
-    },
-  });
+  const updateProfile = useUpdateProfile();
 
   const initials = currentUser?.name?.substring(0, 2).toUpperCase() || "US";
 
@@ -364,7 +362,8 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                         />
                       </div>
                       <p className="text-[11px] text-muted-foreground">
-                        Diperlukan untuk memverifikasi akun sebelum mengubah kata sandi.
+                        Diperlukan untuk memverifikasi akun sebelum mengubah
+                        kata sandi.
                       </p>
                       <FieldError errors={field.state.meta.errors} />
                     </Field>

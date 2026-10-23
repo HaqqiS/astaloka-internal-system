@@ -5,6 +5,10 @@ import {
   generateUploadSignature,
 } from "~/lib/cloudinary";
 import { extractShortIdFromSlug } from "~/lib/slug-utils";
+import {
+  isAdminOrExecutive,
+  requireProjectMembership,
+} from "~/server/api/helpers/permission";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const uploadRouter = createTRPCRouter({
@@ -37,25 +41,12 @@ export const uploadRouter = createTRPCRouter({
       }
 
       const { id: userId, roleGlobal } = ctx.session.user;
-      const isAdminOrExecutive =
-        roleGlobal === "ADMIN" || roleGlobal === "EXECUTIVE";
 
-      if (!isAdminOrExecutive) {
-        const member = await ctx.db.projectMember.findUnique({
-          where: {
-            userId_projectId: { userId, projectId: project.id },
-          },
-        });
-
-        if (!member) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Anda bukan anggota dari proyek ini",
-          });
-        }
+      if (!isAdminOrExecutive(roleGlobal)) {
+        const role = await requireProjectMembership(ctx.db, userId, project.id);
 
         // Validate project-level role per upload type
-        if (input.type === "documents" && member.role !== "ARCHITECT") {
+        if (input.type === "documents" && role !== "ARCHITECT") {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Hanya ARCHITECT yang dapat mengunggah dokumen proyek",
@@ -64,8 +55,8 @@ export const uploadRouter = createTRPCRouter({
 
         if (
           input.type === "reports" &&
-          member.role !== "SUPERVISOR" &&
-          member.role !== "ARCHITECT"
+          role !== "SUPERVISOR" &&
+          role !== "ARCHITECT"
         ) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -76,8 +67,8 @@ export const uploadRouter = createTRPCRouter({
 
         if (
           input.type === "emergency" &&
-          member.role !== "SUPERVISOR" &&
-          member.role !== "FINANCE"
+          role !== "SUPERVISOR" &&
+          role !== "FINANCE"
         ) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -192,17 +183,8 @@ export const uploadRouter = createTRPCRouter({
                 });
               }
 
-              const member = await ctx.db.projectMember.findUnique({
-                where: {
-                  userId_projectId: { userId, projectId: project.id },
-                },
-              });
-
-              if (!member && roleGlobal !== "EXECUTIVE") {
-                throw new TRPCError({
-                  code: "FORBIDDEN",
-                  message: "Anda bukan anggota proyek pemilik aset ini",
-                });
+              if (!isAdminOrExecutive(roleGlobal)) {
+                await requireProjectMembership(ctx.db, userId, project.id);
               }
             }
           }

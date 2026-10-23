@@ -45,7 +45,7 @@ export function TaskList({
       toast.success("Tugas berhasil dihapus");
       setDeleteTaskTarget(null);
     } catch {
-      toast.error("Gagal menghapus Tugas");
+      // Error toast ditangani secara global oleh mutationCache di query-client.ts
     }
   };
 

@@ -22,20 +22,15 @@ export function RejectUserDialog({
 }: RejectUserDialogProps) {
   const reject = useRejectUser();
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!user) return;
-    reject.mutate(
-      { userId: user.id },
-      {
-        onSuccess: () => {
-          toast.success(`${user.name} telah ditolak`);
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          toast.error(error.message || "Gagal menolak pengguna");
-        },
-      },
-    );
+    try {
+      await reject.mutateAsync({ userId: user.id });
+      toast.success(`${user.name} telah ditolak`);
+      onOpenChange(false);
+    } catch {
+      // Ditangani secara global oleh mutationCache
+    }
   };
 
   if (!user) return null;

@@ -23,20 +23,15 @@ export function DeleteUserDialog({
 }: DeleteUserDialogProps) {
   const deleteUser = useDeleteUser();
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!user) return;
-    deleteUser.mutate(
-      { userId: user.id },
-      {
-        onSuccess: () => {
-          toast.success(`${user.name} telah dihapus`);
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          toast.error(error.message || "Gagal menghapus pengguna");
-        },
-      },
-    );
+    try {
+      await deleteUser.mutateAsync({ userId: user.id });
+      toast.success(`${user.name} telah dihapus`);
+      onOpenChange(false);
+    } catch {
+      // Ditangani secara global oleh mutationCache
+    }
   };
 
   if (!user) return null;

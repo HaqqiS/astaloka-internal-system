@@ -101,7 +101,7 @@ export function MediaUpload({
       });
       toast.success("Foto dokumentasi berhasil dihapus");
     } catch {
-      toast.error("Gagal menghapus foto");
+      // Error toast ditangani secara global oleh mutationCache di query-client.ts
     }
   };
 

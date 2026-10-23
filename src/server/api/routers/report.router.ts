@@ -129,7 +129,7 @@ export const reportRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Report not found",
+          message: "Laporan tidak ditemukan",
         });
       }
 
@@ -351,7 +351,7 @@ export const reportRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Report not found",
+          message: "Laporan tidak ditemukan",
         });
       }
 
@@ -390,6 +390,7 @@ export const reportRouter = createTRPCRouter({
         report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat mengubah data laporan ini",
       );
 
       const updated = await ctx.db.dailyReport.update({
@@ -445,7 +446,7 @@ export const reportRouter = createTRPCRouter({
       if (!report) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Report not found",
+          message: "Laporan tidak ditemukan",
         });
       }
 
@@ -454,6 +455,7 @@ export const reportRouter = createTRPCRouter({
         report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat menghapus laporan ini",
       );
 
       // Delete all associated media assets from Cloudinary first
@@ -510,6 +512,7 @@ export const reportRouter = createTRPCRouter({
         report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat menambahkan tugas pada laporan ini",
       );
 
       const task = await ctx.db.dailyReportTask.create({
@@ -552,7 +555,7 @@ export const reportRouter = createTRPCRouter({
       if (!task) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Task not found",
+          message: "Tugas tidak ditemukan",
         });
       }
 
@@ -569,6 +572,7 @@ export const reportRouter = createTRPCRouter({
         task.report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat mengubah tugas pada laporan ini",
       );
 
       const updated = await ctx.db.dailyReportTask.update({
@@ -607,7 +611,7 @@ export const reportRouter = createTRPCRouter({
       if (!task) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Task not found",
+          message: "Tugas tidak ditemukan",
         });
       }
 
@@ -624,6 +628,7 @@ export const reportRouter = createTRPCRouter({
         task.report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat menghapus tugas dari laporan ini",
       );
 
       await ctx.db.dailyReportTask.delete({
@@ -675,6 +680,7 @@ export const reportRouter = createTRPCRouter({
         report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat menambahkan media pada laporan ini",
       );
 
       const media = await ctx.db.reportMedia.create({
@@ -715,7 +721,7 @@ export const reportRouter = createTRPCRouter({
       if (!media) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Media not found",
+          message: "Media dokumentasi tidak ditemukan",
         });
       }
 
@@ -732,6 +738,7 @@ export const reportRouter = createTRPCRouter({
         media.report,
         ctx.session.user.id,
         ctx.session.user.roleGlobal,
+        "Hanya pembuat laporan yang dapat menghapus media dari laporan ini",
       );
 
       // Delete from Cloudinary first

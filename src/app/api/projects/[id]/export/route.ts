@@ -296,7 +296,11 @@ export async function GET(
       },
       { col: 3, value: sanitizeSpreadsheetText(report.weather), center: true },
       { col: 4, value: report.totalWorkers, center: true },
-      { col: 5, value: sanitizeSpreadsheetText(report.location), center: false },
+      {
+        col: 5,
+        value: sanitizeSpreadsheetText(report.location),
+        center: false,
+      },
       { col: 6, value: `${report.progressPercent}%`, center: true },
       { col: 8, value: sanitizeSpreadsheetText(report.issues), center: false },
     ];

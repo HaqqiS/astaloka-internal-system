@@ -90,6 +90,8 @@ export function EditUserDialog({
     useState<Country>(DEFAULT_COUNTRY);
   const [showPassword, setShowPassword] = useState(false);
 
+  const updateUser = useUpdateUser();
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -113,18 +115,49 @@ export function EditUserDialog({
         formattedPhone = `${selectedCountry.dialCode}${normalized}`;
       }
 
-      updateUser.mutate({
-        userId: user.id,
-        name: value.name.trim(),
-        email: value.email.trim().toLowerCase() || undefined,
-        phoneNumber: formattedPhone,
-        password:
-          value.changePassword && value.newPassword.trim()
-            ? value.newPassword.trim()
-            : undefined,
-        roleGlobal: value.role,
-        isActive: value.isActive,
-      });
+      try {
+        await updateUser.mutateAsync({
+          userId: user.id,
+          name: value.name.trim(),
+          email: value.email.trim().toLowerCase() || undefined,
+          phoneNumber: formattedPhone,
+          password:
+            value.changePassword && value.newPassword.trim()
+              ? value.newPassword.trim()
+              : undefined,
+          roleGlobal: value.role,
+          isActive: value.isActive,
+        });
+
+        const displayIdentifier =
+          formattedPhone || value.email.trim() || user?.email || "";
+
+        if (
+          value.changePassword &&
+          value.newPassword.trim() &&
+          navigator.clipboard
+        ) {
+          const summaryText = `Pembaruan Akun Sandaran Internal:
+Nama: ${value.name.trim()}
+Login: ${displayIdentifier}
+Kata Sandi Baru: ${value.newPassword}
+Peran: ${value.role}
+Status: ${value.isActive ? "Aktif" : "Nonaktif"}
+Tautan: ${typeof window !== "undefined" ? window.location.origin : ""}/login`;
+
+          void navigator.clipboard.writeText(summaryText);
+          toast.success(`Data ${value.name} berhasil diperbarui!`, {
+            description:
+              "Kredensial baru telah disalin ke clipboard untuk dikirimkan via chat.",
+          });
+        } else {
+          toast.success(`Data ${value.name} berhasil diperbarui!`);
+        }
+
+        onOpenChange(false);
+      } catch {
+        // Ditangani secara global oleh mutationCache
+      }
     },
   });
 
@@ -146,44 +179,6 @@ export function EditUserDialog({
       });
     }
   }, [user, open, form]);
-
-  const updateUser = useUpdateUser({
-    onSuccess: () => {
-      const currentValues = form.state.values;
-      const formattedPhone = currentValues.phone.trim()
-        ? `${selectedCountry.dialCode}${currentValues.phone.replace(/\D/g, "").replace(/^0+/, "")}`
-        : "";
-      const displayIdentifier =
-        formattedPhone || currentValues.email.trim() || user?.email || "";
-
-      if (
-        currentValues.changePassword &&
-        currentValues.newPassword.trim() &&
-        navigator.clipboard
-      ) {
-        const summaryText = `Pembaruan Akun Sandaran Internal:
-Nama: ${currentValues.name.trim()}
-Login: ${displayIdentifier}
-Kata Sandi Baru: ${currentValues.newPassword}
-Peran: ${currentValues.role}
-Status: ${currentValues.isActive ? "Aktif" : "Nonaktif"}
-Tautan: ${typeof window !== "undefined" ? window.location.origin : ""}/login`;
-
-        void navigator.clipboard.writeText(summaryText);
-        toast.success(`Data ${currentValues.name} berhasil diperbarui!`, {
-          description:
-            "Kredensial baru telah disalin ke clipboard untuk dikirimkan via chat.",
-        });
-      } else {
-        toast.success(`Data ${currentValues.name} berhasil diperbarui!`);
-      }
-
-      onOpenChange(false);
-    },
-    onError: (err) => {
-      toast.error(err.message || "Gagal memperbarui data pengguna");
-    },
-  });
 
   if (!user) return null;
 

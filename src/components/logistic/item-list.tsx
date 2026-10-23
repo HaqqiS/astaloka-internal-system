@@ -149,10 +149,8 @@ export function ItemList({ projectId }: ItemListProps) {
       });
       toast.success("Barang berhasil dihapus");
       setDeleteTarget(null);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Gagal menghapus barang",
-      );
+    } catch {
+      // Error toast ditangani secara global oleh mutationCache di query-client.ts
     }
   };
 

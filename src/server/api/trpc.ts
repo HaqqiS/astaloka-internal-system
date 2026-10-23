@@ -14,6 +14,12 @@ import z, { ZodError } from "zod";
 
 import { auth } from "~/server/better-auth";
 import { db } from "~/server/db";
+import {
+  getProjectRole,
+  isAdminOrExecutive,
+  requireAdmin,
+  requireProjectRole,
+} from "~/server/api/helpers/permission";
 
 /**
  * 1. CONTEXT
@@ -133,7 +139,8 @@ export const protectedProcedure = t.procedure
     if (!ctx.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: "Not authenticated",
+        message:
+          "Sesi tidak valid atau telah kedaluwarsa. Silakan login kembali.",
       });
     }
 
@@ -143,7 +150,8 @@ export const protectedProcedure = t.procedure
     if (!isActive) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Account is not active. Please wait for admin approval.",
+        message:
+          "Akun belum aktif. Harap tunggu persetujuan dari Administrator.",
       });
     }
 
@@ -151,7 +159,7 @@ export const protectedProcedure = t.procedure
     if (roleGlobal === "NONE") {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "You do not have permission to access this system.",
+        message: "Anda belum memiliki hak akses ke sistem ini.",
       });
     }
 
@@ -163,7 +171,7 @@ export const protectedProcedure = t.procedure
     ) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Invalid role. Access denied.",
+        message: "Peran pengguna tidak valid. Akses ditolak.",
       });
     }
 
@@ -187,7 +195,8 @@ export const adminProcedure = t.procedure
     if (!ctx.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: "Not authenticated",
+        message:
+          "Sesi tidak valid atau telah kedaluwarsa. Silakan login kembali.",
       });
     }
 
@@ -197,15 +206,15 @@ export const adminProcedure = t.procedure
     if (!isActive) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Account is not active.",
+        message: "Akun belum aktif.",
       });
     }
 
     // Check if user has admin role
-    if (roleGlobal !== "ADMIN" && roleGlobal !== "EXECUTIVE") {
+    if (!isAdminOrExecutive(roleGlobal)) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Admin access required.",
+        message: "Akses Administrator atau Eksekutif diperlukan.",
       });
     }
 
@@ -229,7 +238,8 @@ export const strictAdminProcedure = t.procedure
     if (!ctx.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: "Not authenticated",
+        message:
+          "Sesi tidak valid atau telah kedaluwarsa. Silakan login kembali.",
       });
     }
 
@@ -238,16 +248,14 @@ export const strictAdminProcedure = t.procedure
     if (!isActive) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Account is not active.",
+        message: "Akun belum aktif.",
       });
     }
 
-    if (roleGlobal !== "ADMIN") {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Operasi ini hanya dapat dilakukan oleh Administrator.",
-      });
-    }
+    requireAdmin(
+      roleGlobal,
+      "Operasi ini hanya dapat dilakukan oleh Administrator.",
+    );
 
     return next({
       ctx: {
@@ -269,7 +277,8 @@ export const adminOrExecutiveProcedure = t.procedure
     if (!ctx.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
-        message: "Not authenticated",
+        message:
+          "Sesi tidak valid atau telah kedaluwarsa. Silakan login kembali.",
       });
     }
 
@@ -279,15 +288,15 @@ export const adminOrExecutiveProcedure = t.procedure
     if (!isActive) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Account is not active.",
+        message: "Akun belum aktif.",
       });
     }
 
     // Check if user has admin or executive role
-    if (roleGlobal !== "ADMIN" && roleGlobal !== "EXECUTIVE") {
+    if (!isAdminOrExecutive(roleGlobal)) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Admin or Executive access required.",
+        message: "Akses Administrator atau Eksekutif diperlukan.",
       });
     }
 
@@ -332,43 +341,23 @@ export const projectProcedure = (
       if (!projectId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "projectId is required in input",
+          message: "ID Proyek wajib disertakan pada permintaan",
         });
       }
 
       const { id: userId, roleGlobal } = ctx.session.user;
 
-      // ADMIN and EXECUTIVE have special access
-      const isAdminOrExecutive =
-        roleGlobal === "ADMIN" || roleGlobal === "EXECUTIVE";
-
-      // Get user's project role
-      const member = await ctx.db.projectMember.findUnique({
-        where: {
-          userId_projectId: { userId, projectId },
-        },
-      });
-
-      // Check if user is a project member (unless ADMIN/EXECUTIVE)
-      if (!member && !isAdminOrExecutive) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not a member of this project",
-        });
-      }
-
-      const projectRole = member?.role;
-
-      // Verify user has one of the allowed roles (unless ADMIN)
-      if (
-        roleGlobal !== "ADMIN" &&
-        projectRole &&
-        !allowedRoles.includes(projectRole)
-      ) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: `This action requires one of the following roles: ${allowedRoles.join(", ")}`,
-        });
+      // Verify project membership and role (standard users are validated via helper; ADMIN/EXECUTIVE bypass or get role)
+      let projectRole: ProjectRole | null = null;
+      if (!isAdminOrExecutive(roleGlobal)) {
+        projectRole = await requireProjectRole(
+          ctx.db,
+          userId,
+          projectId,
+          allowedRoles,
+        );
+      } else {
+        projectRole = await getProjectRole(ctx.db, userId, projectId);
       }
 
       // Executive read-only enforcement (unless explicitly allowed)
@@ -381,7 +370,7 @@ export const projectProcedure = (
         if (isMutation) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Executive has read-only access to project operations",
+            message: "Eksekutif hanya memiliki akses baca pada operasi proyek",
           });
         }
       }
