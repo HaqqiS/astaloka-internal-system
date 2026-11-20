@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import("next").NextConfig} */
 const config = {
   outputFileTracingRoot: __dirname,
-  serverExternalPackages: ["@prisma/client", ".prisma/client", "pg"],
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
@@ -72,7 +72,3 @@ const config = {
 };
 
 export default config;
-
-if (process.env.NODE_ENV === "development") {
-  import("@opennextjs/cloudflare").then((m) => m.initOpenNextCloudflareForDev());
-}
