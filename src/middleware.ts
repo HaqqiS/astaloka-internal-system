@@ -24,13 +24,8 @@ export async function middleware(request: NextRequest) {
 
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
 
-  // If user is already logged in and enters /login, redirect to /dashboard
-  if (normalizedPath === "/login" && sessionToken) {
-    const redirectUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // Allow public routes
+  // Allow public routes (note: /login validates session against DB on the server
+  // and clears stale cookies if expired, so we don't blindly redirect here)
   if (PUBLIC_ROUTES.includes(normalizedPath)) {
     return NextResponse.next();
   }

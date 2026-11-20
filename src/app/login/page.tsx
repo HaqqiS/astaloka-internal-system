@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { validateSessionAccess } from "~/lib/auth-guards";
+import { hasSessionCookie } from "~/lib/server-auth";
 import { getSession } from "~/server/better-auth/server";
 import { LoginForm } from "../../components/login/login-form";
 
@@ -14,8 +16,18 @@ export const metadata: Metadata = {
 
 export default async function LoginPage() {
   const session = await getSession();
+
   if (session?.user) {
-    redirect("/dashboard");
+    const validation = validateSessionAccess(session);
+    if (validation.isValid) {
+      redirect("/dashboard");
+    }
+    redirect(validation.redirectTo ?? "/");
+  }
+
+  // Clear stale/expired session cookie automatically so the user isn't stuck
+  if (await hasSessionCookie()) {
+    redirect("/api/auth/clear-session?redirect=/login");
   }
 
   return (

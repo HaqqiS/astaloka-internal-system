@@ -16,6 +16,14 @@ export const auth = betterAuth({
     enabled: true,
   },
 
+  // Account Linking (allow seamless linking between credential & Google OAuth)
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
+  },
+
   // Session Configuration
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
