@@ -12,7 +12,7 @@ Seluruh dokumentasi teknis dan spesifikasi produk tersimpan rapi di dalam direkt
 | :--- | :--- |
 | 📄 **[PRD.md](./docs/PRD.md)** | **Product Requirement Document (PRD)**<br>• Latar belakang bisnis & problem statement (Astaloka / Sandaran Studio).<br>• Persona peran, kebutuhan fungsional modul, dan kriteria sukses (KPI).<br>• Status rilis (*Active Development & Field Testing Phase*). |
 | 🔐 **[PERMISSIONS.md](./docs/PERMISSIONS.md)** | **Single Source of Truth Hak Akses & Peran**<br>• Definisi peran Global (`ADMIN`, `EXECUTIVE`, `USER`) dan Project (`SUPERVISOR`, `ARCHITECT`, `FINANCE`, `LOGISTIC`).<br>• Matriks hak akses lengkap 28 aksi operasional.<br>• Diagram alur 3-Layer Permission Guard (Mermaid).<br>• Panduan developer tRPC (`publicProcedure`, `protectedProcedure`, `adminProcedure`, `projectProcedure`). |
-| 🏛️ **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | **Arsitektur Sistem & Infrastruktur Cloud**<br>• Stack teknologi (Next.js 15, React 19, Better Auth, Prisma 6, tRPC 11).<br>• Infrastruktur Cloudflare Workers & Hyperdrive connection pool.<br>• Pipeline aset & upload Cloudinary.<br>• Siklus sesi & hydration (Zustand + hook `useUserRole`).<br>• Peta alur navigasi UI per role (*UI Flow Map*). |
+| 🏛️ **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | **Arsitektur Sistem & Infrastruktur Cloud**<br>• Stack teknologi (Next.js 15, React 19, Better Auth, Prisma 6, tRPC 11).<br>• Infrastruktur Cloud Platform-Agnostic (Vercel, Netlify, Railway, Render) & PostgreSQL pooling.<br>• Pipeline aset & upload Cloudinary.<br>• Siklus sesi & hydration (Zustand + hook `useUserRole`).<br>• Peta alur navigasi UI per role (*UI Flow Map*). |
 | 🐛 **[KNOWN-ISSUES.md](./docs/KNOWN-ISSUES.md)** | **Daftar Isu Aktif & Backlog**<br>• Gotcha penamaan ulang folder Cloudinary saat slug proyek berganti.<br>• Catatan responsif/overflow tabel di layar mobile.<br>• Perilaku auto-zoom input & drawer scroll di iOS Safari.<br>• Antrean fitur (Project Galleries). |
 | 🚀 **[dashboard-remodel-spec.md](./docs/dashboard-remodel-spec.md)** | **Spesifikasi Aktif Pembaruan Dashboard**<br>• Rencana teknis perombakan tampilan dashboard berbasis *role lenses* (`AdminDashboard`, `ExecutiveDashboard`, `UserDashboard`). |
 
@@ -42,7 +42,7 @@ Layer 3: Project Context Check
 - **API & State**: [tRPC v11](https://trpc.io), [TanStack React Query v5](https://tanstack.com/query), [Zustand v5](https://github.com/pmndrs/zustand)
 - **Autentikasi**: [Better Auth v1.3](https://better-auth.com) + Prisma Adapter
 - **Database & ORM**: PostgreSQL, [Prisma v6](https://prisma.io)
-- **Deployment & Edge**: [OpenNext](https://opennext.js.org) di [Cloudflare Workers](https://workers.cloudflare.com) dengan [Cloudflare Hyperdrive](https://developers.cloudflare.com/hyperdrive/)
+- **Deployment**: Platform-Agnostic Node.js Runtime (siap untuk Vercel, Netlify, Railway, Render)
 - **Media & Penyimpanan**: [Cloudinary](https://cloudinary.com)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com), [shadcn/ui](https://ui.shadcn.com), [Tabler Icons](https://tabler.io/icons)
 

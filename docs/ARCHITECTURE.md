@@ -13,38 +13,39 @@ Sandaran Internal System dibangun dengan teknologi modern yang dioptimalkan untu
 | **Framework**          | Next.js 15 (App Router) + React 19       | Server Components secara default; client components hanya untuk interaktivitas (`"use client"`). |
 | **Autentikasi**        | Better Auth v1.3 + Prisma Adapter        | Autentikasi berbasis session tersimpan di DB, mendukung multi-role dan approval guard.           |
 | **API Layer**          | tRPC v11 + TanStack Query v5 + SuperJSON | End-to-end typesafe API; prosedur terisolasi dalam router fitur.                                 |
-| **ORM & Database**     | Prisma v6 + PostgreSQL                   | Migrasi berbasis schema (`schema.prisma`) dan koneksi dioptimalkan untuk serverless.             |
-| **Infrastruktur Edge** | OpenNext + Cloudflare Workers / Pages    | Serverless deployment di jaringan global Cloudflare.                                             |
-| **Database Pooling**   | Cloudflare Hyperdrive (`HYPERDRIVE`)     | Connection pooling berlatensi rendah antara Cloudflare Workers dan PostgreSQL.                   |
+| **ORM & Database**     | Prisma v6 + PostgreSQL                   | Migrasi berbasis schema (`schema.prisma`) dengan `DATABASE_URL` (pooled) & `DIRECT_URL`.         |
+| **Infrastruktur SaaS** | Platform-Agnostic Node.js Runtime        | Siap di-deploy ke Vercel, Netlify, Railway, Render, atau platform berbasis Node.js lainnya.      |
+| **Database Pooling**   | Managed Connection Pooler (PgBouncer)    | Mendukung Transaction Pooler (Supabase / Neon) maupun direct connection di container PaaS.       |
 | **Media & Storage**    | Cloudinary v2                            | Direct signed client upload, signed asset deletion, dan manajemen folder per-proyek.             |
 | **Styling & UI**       | Tailwind CSS v4 + shadcn/ui (Radix UI)   | Desain token HSL, dark mode via `next-themes`, ikon dari `@tabler/icons-react`.                  |
 | **Animasi & Motion**   | GSAP 3 + Lenis Smooth Scroll             | Khusus homepage scrollytelling (`SmoothScrollProvider`).                                         |
 
 ---
 
-## 2. Infrastruktur Cloud: Cloudflare Hyperdrive & Database Pooling
+## 2. Infrastruktur Cloud & Database Connection Pooling
 
-Sistem dirancang untuk berjalan di lingkungan Edge/Serverless Cloudflare dengan manajemen koneksi database yang aman dan efisien:
+Sistem menggunakan runtime Node.js standar Next.js yang bersifat *platform-agnostic* sehingga dapat di-deploy di berbagai platform SaaS/PaaS tanpa terikat vendor tertentu:
 
 ```
 [ Browser / Klien ]
        │
        ▼
-[ Cloudflare Workers (OpenNext) ]
+[ SaaS / PaaS Hosting (Vercel / Netlify / Railway / Render) ]
        │
-       │  (wrangler.jsonc: HYPERDRIVE binding)
+       │  (Prisma Client Singleton — src/server/db.ts)
        ▼
-[ Cloudflare Hyperdrive ] ──── Connection Pool & Caching
+[ Connection Pooler / PgBouncer (DATABASE_URL) ]
        │
        ▼
-[ PostgreSQL Database ]
+[ PostgreSQL Database (Supabase / Neon / Railway PG) ]
 ```
 
 ### Logika Inisialisasi Database (`src/server/db.ts`)
 
-1. **Runtime Cloudflare**: Sistem memeriksa ketersediaan binding `HYPERDRIVE` dari context Cloudflare (`cf.env.HYPERDRIVE`).
-2. **Koneksi Dinamis**: Jika Hyperdrive terdeteksi, Prisma menggunakan `hyperdrive.connectionString` dengan ukuran pool `max: 5` tanpa verifikasi manual SSL.
-3. **Local / Direct Fallback**: Jika berjalan di lingkungan development lokal tanpa Hyperdrive, koneksi menggunakan direct URL dengan `max: 1` dan SSL standar.
+1. **Global Singleton Pattern**: Menggunakan `globalThis.prisma` pada lingkungan development agar *hot-reload* Next.js tidak membuat instance `PrismaClient` berulang kali.
+2. **Pemisahan Koneksi Runtime & Migrasi (`prisma/schema.prisma`)**:
+   - `DATABASE_URL`: Digunakan oleh aplikasi saat runtime (disarankan menggunakan URL Transaction Pooler / PgBouncer pada platform serverless seperti Vercel atau Netlify).
+   - `DIRECT_URL`: Digunakan khusus oleh Prisma CLI saat menjalankan migrasi skema (`pnpm db:migrate` / `prisma migrate deploy`).
 
 ---
 
