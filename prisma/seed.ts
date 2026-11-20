@@ -1,11 +1,24 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "better-auth/crypto";
+import { DUMMY_PROJECT_DOCUMENTS } from "./seeds/documents";
+import { DUMMY_EMERGENCY_FUNDS } from "./seeds/emergency";
+import { DUMMY_LOGISTIC_ITEMS } from "./seeds/logistics";
 import { DUMMY_PROJECT_MEMBERS } from "./seeds/members";
 import { DUMMY_PROJECTS } from "./seeds/projects";
+import {
+  DUMMY_REPORT_COMMENTS,
+  DUMMY_REPORT_MEDIA,
+} from "./seeds/report-extras";
 import { DUMMY_REPORTS } from "./seeds/reports";
 import { DEFAULT_SEED_PASSWORD, DUMMY_USERS } from "./seeds/users";
 
 const prisma = new PrismaClient();
+
+function daysAgo(days: number): Date {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+}
 
 async function main() {
   console.log("⏳ Start seeding database...");
@@ -28,6 +41,7 @@ async function main() {
           name: user.name,
           roleGlobal: user.roleGlobal,
           isActive: user.isActive,
+          emailVerified: true,
         },
       });
       console.log(
@@ -41,6 +55,7 @@ async function main() {
           email: user.email,
           roleGlobal: user.roleGlobal,
           isActive: user.isActive,
+          emailVerified: true,
         },
       });
       console.log(
@@ -201,6 +216,219 @@ async function main() {
       });
     }
     console.log(`     └─ Seeded ${report.tasks.length} tasks for report.`);
+  }
+
+  // Helper: map email -> actual userId in DB (safe if user already registered via OAuth)
+  const allUsers = await prisma.user.findMany({
+    select: { id: true, email: true },
+  });
+  const userIdByEmail = new Map(allUsers.map((u) => [u.email, u.id]));
+
+  // 5. Seed Report Media
+  console.log("🖼️ Seeding report media...");
+  for (const media of DUMMY_REPORT_MEDIA) {
+    await prisma.reportMedia.upsert({
+      where: { id: media.id },
+      update: {
+        reportId: media.reportId,
+        publicId: media.publicId,
+        url: media.url,
+        resourceType: media.resourceType,
+        fileName: media.fileName,
+        fileSize: media.fileSize,
+        mimeType: media.mimeType,
+      },
+      create: {
+        id: media.id,
+        reportId: media.reportId,
+        publicId: media.publicId,
+        url: media.url,
+        resourceType: media.resourceType,
+        fileName: media.fileName,
+        fileSize: media.fileSize,
+        mimeType: media.mimeType,
+      },
+    });
+  }
+  console.log(`   - Upserted ${DUMMY_REPORT_MEDIA.length} report media items.`);
+
+  // 6. Seed Report Comments
+  console.log("💬 Seeding report comments...");
+  for (const comment of DUMMY_REPORT_COMMENTS) {
+    const authorId = userIdByEmail.get(comment.userEmail);
+    if (!authorId) continue;
+
+    await prisma.reportComment.upsert({
+      where: { id: comment.id },
+      update: {
+        reportId: comment.reportId,
+        userId: authorId,
+        content: comment.content,
+      },
+      create: {
+        id: comment.id,
+        reportId: comment.reportId,
+        userId: authorId,
+        content: comment.content,
+      },
+    });
+  }
+  console.log(`   - Upserted ${DUMMY_REPORT_COMMENTS.length} report comments.`);
+
+  // 7. Seed Project Documents
+  console.log("📄 Seeding project documents...");
+  for (const doc of DUMMY_PROJECT_DOCUMENTS) {
+    const uploaderId = userIdByEmail.get(doc.uploaderEmail);
+    if (!uploaderId) continue;
+
+    await prisma.projectDocument.upsert({
+      where: { id: doc.id },
+      update: {
+        projectId: doc.projectId,
+        userId: uploaderId,
+        fileName: doc.fileName,
+        fileType: doc.fileType,
+        publicId: doc.publicId,
+        url: doc.url,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        resourceType: doc.resourceType,
+        title: doc.title,
+        description: doc.description,
+        version: doc.version,
+      },
+      create: {
+        id: doc.id,
+        projectId: doc.projectId,
+        userId: uploaderId,
+        fileName: doc.fileName,
+        fileType: doc.fileType,
+        publicId: doc.publicId,
+        url: doc.url,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        resourceType: doc.resourceType,
+        title: doc.title,
+        description: doc.description,
+        version: doc.version,
+      },
+    });
+  }
+  console.log(
+    `   - Upserted ${DUMMY_PROJECT_DOCUMENTS.length} project documents.`,
+  );
+
+  // 8. Seed Emergency Funds & Emergency Transactions
+  console.log("💰 Seeding emergency funds & transactions...");
+  for (const fund of DUMMY_EMERGENCY_FUNDS) {
+    const upsertedFund = await prisma.emergencyFund.upsert({
+      where: { projectId: fund.projectId },
+      update: {
+        currentBalance: fund.currentBalance,
+      },
+      create: {
+        id: fund.id,
+        projectId: fund.projectId,
+        currentBalance: fund.currentBalance,
+      },
+    });
+
+    for (const tx of fund.transactions) {
+      const requestedById = userIdByEmail.get(tx.requestedByEmail);
+      if (!requestedById) continue;
+
+      const verifiedById = tx.verifiedByEmail
+        ? (userIdByEmail.get(tx.verifiedByEmail) ?? null)
+        : null;
+      const createdAt = daysAgo(tx.daysAgo);
+      const verifiedAt =
+        tx.status === "REVIEWED" ? daysAgo(Math.max(0, tx.daysAgo - 1)) : null;
+
+      await prisma.emergencyTransaction.upsert({
+        where: { id: tx.id },
+        update: {
+          fundId: upsertedFund.id,
+          requestedById,
+          verifiedById,
+          verifiedAt,
+          amount: tx.amount,
+          description: tx.description,
+          type: tx.type,
+          status: tx.status,
+          publicId: tx.publicId ?? null,
+          url: tx.url ?? null,
+        },
+        create: {
+          id: tx.id,
+          fundId: upsertedFund.id,
+          requestedById,
+          verifiedById,
+          verifiedAt,
+          amount: tx.amount,
+          description: tx.description,
+          type: tx.type,
+          status: tx.status,
+          publicId: tx.publicId ?? null,
+          url: tx.url ?? null,
+          createdAt,
+        },
+      });
+    }
+    console.log(
+      `   - EmergencyFund upserted for ${fund.projectId} (${fund.transactions.length} transactions).`,
+    );
+  }
+
+  // 9. Seed Logistic Items & Logistic Transactions
+  console.log("📦 Seeding logistic items & transactions...");
+  for (const item of DUMMY_LOGISTIC_ITEMS) {
+    const upsertedItem = await prisma.logisticItem.upsert({
+      where: {
+        projectId_slug: {
+          projectId: item.projectId,
+          slug: item.slug,
+        },
+      },
+      update: {
+        name: item.name,
+        unit: item.unit,
+      },
+      create: {
+        id: item.id,
+        projectId: item.projectId,
+        slug: item.slug,
+        name: item.name,
+        unit: item.unit,
+      },
+    });
+
+    for (const tx of item.transactions) {
+      const userId = userIdByEmail.get(tx.userEmail);
+      if (!userId) continue;
+
+      await prisma.logisticTransaction.upsert({
+        where: { id: tx.id },
+        update: {
+          itemId: upsertedItem.id,
+          userId,
+          type: tx.type,
+          quantity: tx.quantity,
+          notes: tx.notes,
+        },
+        create: {
+          id: tx.id,
+          itemId: upsertedItem.id,
+          userId,
+          type: tx.type,
+          quantity: tx.quantity,
+          notes: tx.notes,
+          createdAt: daysAgo(tx.daysAgo),
+        },
+      });
+    }
+    console.log(
+      `   - LogisticItem upserted: ${item.name} (${item.transactions.length} transactions).`,
+    );
   }
 
   console.log("✨ Database seeding finished successfully.");
