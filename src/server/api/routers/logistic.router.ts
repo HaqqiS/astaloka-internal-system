@@ -283,6 +283,9 @@ export const logisticRouter = createTRPCRouter({
         }
 
         if (input.type === "OUT") {
+          // Lock the logistic item row to prevent concurrent OUT race conditions
+          await tx.$executeRaw`SELECT id FROM "LogisticItem" WHERE id = ${input.itemId} FOR UPDATE`;
+
           const aggregates = await tx.logisticTransaction.groupBy({
             by: ["type"],
             where: { itemId: input.itemId },

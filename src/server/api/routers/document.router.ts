@@ -369,7 +369,12 @@ export const documentRouter = createTRPCRouter({
         fileType: z
           .enum(["DESIGN", "DRAWING", "REFERENCE", "SPECIFICATION", "OTHER"])
           .optional(),
-        fileName: z.string().trim().max(255).optional(),
+        fileName: z
+          .string()
+          .trim()
+          .min(1, "Nama file tidak boleh kosong")
+          .max(255)
+          .optional(),
         publicId: z
           .string()
           .refine((p) => p.startsWith("astaloka/") && !p.includes(".."), {
@@ -502,7 +507,11 @@ export const documentRouter = createTRPCRouter({
         "Hanya pemilik dokumen yang dapat menghapus dokumen ini",
       );
 
-      // Delete asset from Cloudinary to prevent orphaned storage
+      await ctx.db.projectDocument.delete({
+        where: { id: input.documentId },
+      });
+
+      // Delete asset from Cloudinary only after DB record deletion succeeds
       if (
         document.publicId?.startsWith("astaloka/") &&
         !document.publicId.includes("..")
@@ -511,13 +520,8 @@ export const documentRouter = createTRPCRouter({
           resourceType: document.resourceType ?? undefined,
         }).catch((err) => {
           console.error("Failed to delete Cloudinary asset:", err);
-          // Continue with database record deletion
         });
       }
-
-      await ctx.db.projectDocument.delete({
-        where: { id: input.documentId },
-      });
 
       return { success: true };
     }),

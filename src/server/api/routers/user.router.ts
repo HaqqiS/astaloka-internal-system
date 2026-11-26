@@ -298,7 +298,14 @@ export const userRouter = createTRPCRouter({
         select: { roleGlobal: true },
       });
 
-      if (targetUser?.roleGlobal === "ADMIN") {
+      if (!targetUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Pengguna tidak ditemukan",
+        });
+      }
+
+      if (targetUser.roleGlobal === "ADMIN") {
         requireAdmin(
           ctx.session.user.roleGlobal,
           "Hanya Administrator yang dapat menolak akun Administrator lain",
@@ -402,10 +409,23 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      // Get user to validate inactive status
+      // Get user to validate inactive status and historical references
       const user = await ctx.db.user.findUnique({
         where: { id: userId },
-        select: { isActive: true, roleGlobal: true },
+        select: {
+          isActive: true,
+          roleGlobal: true,
+          _count: {
+            select: {
+              reports: true,
+              documents: true,
+              comments: true,
+              requests: true,
+              verifications: true,
+              logistics: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -432,9 +452,31 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      // Delete the user (hard delete or you can mark as deleted)
-      return ctx.db.user.delete({
-        where: { id: userId },
+      const hasHistoricalRecords =
+        user._count.reports > 0 ||
+        user._count.documents > 0 ||
+        user._count.comments > 0 ||
+        user._count.requests > 0 ||
+        user._count.verifications > 0 ||
+        user._count.logistics > 0;
+
+      if (hasHistoricalRecords) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Pengguna memiliki riwayat laporan, dokumen, atau transaksi sehingga tidak dapat dihapus permanen. Biarkan akun dalam status nonaktif.",
+        });
+      }
+
+      return ctx.db.$transaction(async (tx) => {
+        await tx.user.updateMany({
+          where: { reviewedById: userId },
+          data: { reviewedById: null },
+        });
+
+        return tx.user.delete({
+          where: { id: userId },
+        });
       });
     }),
 
@@ -532,6 +574,19 @@ export const userRouter = createTRPCRouter({
             code: "CONFLICT",
             message:
               "Pengguna dengan nomor telepon ini sudah memiliki akun internal",
+          });
+        }
+      }
+
+      if (projectAssignment) {
+        const project = await ctx.db.project.findUnique({
+          where: { id: projectAssignment.projectId },
+          select: { id: true },
+        });
+        if (!project) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Proyek yang dipilih tidak ditemukan",
           });
         }
       }
@@ -834,6 +889,18 @@ export const userRouter = createTRPCRouter({
             message: `Nomor telepon ${phoneNumber} sudah digunakan oleh akun lain`,
           });
         }
+      }
+
+      // Prevent phone-only accounts from clearing both email & phoneNumber
+      if (
+        !email &&
+        currentUser.email.endsWith("@sandaran.internal") &&
+        !phoneNumber
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Akun tanpa email aktif wajib mempertahankan nomor telepon.",
+        });
       }
 
       // Determine final email

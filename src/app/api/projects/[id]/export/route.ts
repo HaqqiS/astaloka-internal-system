@@ -2,7 +2,10 @@ import type { GlobalRole } from "@prisma/client";
 import ExcelJS from "exceljs";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { isAdmin, validateSessionAccess } from "~/lib/auth-guards";
+import {
+  isAdminOrExecutiveRole,
+  validateSessionAccess,
+} from "~/lib/auth-guards";
 import { isValidCloudinaryUrl } from "~/lib/cloudinary";
 import { sanitizeSpreadsheetText } from "~/lib/spreadsheet";
 import { getSession } from "~/server/better-auth/server";
@@ -103,12 +106,15 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2. Otorisasi — hanya ADMIN dan CEO
-  const canExport = isAdmin(session.user.roleGlobal as GlobalRole);
+  // 2. Otorisasi — hanya ADMIN dan EXECUTIVE
+  const canExport = isAdminOrExecutiveRole(
+    session.user.roleGlobal as GlobalRole,
+  );
   if (!canExport) {
     return NextResponse.json(
       {
-        error: "Forbidden: Hanya ADMIN dan CEO yang dapat mengekspor laporan.",
+        error:
+          "Forbidden: Hanya ADMIN dan EXECUTIVE yang dapat mengekspor laporan.",
       },
       { status: 403 },
     );
@@ -117,7 +123,7 @@ export async function GET(
   // 3. Validasi query param `month`
   const { searchParams } = req.nextUrl;
   const monthParam = searchParams.get("month");
-  const parsed = monthParam?.match(/^(\d{4})-(\d{2})$/);
+  const parsed = monthParam?.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
   if (!parsed) {
     return NextResponse.json(
       {
@@ -129,9 +135,13 @@ export async function GET(
   }
 
   const year = parseInt(parsed[1] ?? "0", 10);
-  const monthIndex = parseInt(parsed[2] ?? "1", 10) - 1; // 0-indexed
-  const startDate = new Date(year, monthIndex, 1);
-  const endDate = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
+  const monthStr = parsed[2] ?? "01";
+  const monthNum = parseInt(monthStr, 10);
+  const lastDay = new Date(Date.UTC(year, monthNum, 0)).getUTCDate();
+  const startDate = new Date(`${year}-${monthStr}-01T00:00:00.000+08:00`);
+  const endDate = new Date(
+    `${year}-${monthStr}-${String(lastDay).padStart(2, "0")}T23:59:59.999+08:00`,
+  );
 
   // 4. Ambil project
   const { id: projectId } = await params;
@@ -212,7 +222,7 @@ export async function GET(
   ];
 
   // ── Header Laporan (Baris 1–4) ──
-  const periodLabel = formatMonthYearID(year, monthIndex);
+  const periodLabel = formatMonthYearID(year, monthNum - 1);
   const exportedAt = new Date().toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "long",

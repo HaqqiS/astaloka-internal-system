@@ -53,7 +53,6 @@ export const emergencyRouter = createTRPCRouter({
             members: {
               some: {
                 userId: user.id,
-                role: "FINANCE",
               },
             },
           },
@@ -244,7 +243,7 @@ export const emergencyRouter = createTRPCRouter({
           });
         }
 
-        // Create transaction and update balance atomically
+        // Create transaction and update balance atomically (Finance top-up is auto-reviewed)
         const transaction = await tx.emergencyTransaction.create({
           data: {
             fundId: fund.id,
@@ -254,9 +253,9 @@ export const emergencyRouter = createTRPCRouter({
             publicId: input.proofPublicId,
             url: input.proofUrl,
             type: "DEPOSIT",
-            status: "UNREVIEWED",
-            verifiedById: null,
-            verifiedAt: null,
+            status: "REVIEWED",
+            verifiedById: ctx.session.user.id,
+            verifiedAt: new Date(),
           },
         });
 
@@ -401,6 +400,13 @@ export const emergencyRouter = createTRPCRouter({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Transaksi ini bukan bagian dari proyek ini",
+        });
+      }
+
+      if (transaction.type === "DEPOSIT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Transaksi Deposit sudah terverifikasi otomatis",
         });
       }
 
@@ -549,22 +555,17 @@ export const emergencyRouter = createTRPCRouter({
         });
       }
 
-      // Issue 4: When editing image, delete old image from Cloudinary
+      // Capture old image to delete ONLY after DB transaction commits
       const isImageReplaced =
         input.proofPublicId !== undefined &&
         input.proofPublicId !== transaction.publicId;
-
-      if (isImageReplaced && transaction.publicId) {
-        await deleteCloudinaryAsset(transaction.publicId).catch((err) => {
-          console.error("Failed to delete old Cloudinary asset on edit:", err);
-        });
-      }
+      const oldPublicId = isImageReplaced ? transaction.publicId : null;
 
       // Calculate and apply atomic balance adjustment inside transaction
       const oldAmount = Number(transaction.amount);
       const newAmount = input.amount;
 
-      return ctx.db.$transaction(async (tx) => {
+      const updated = await ctx.db.$transaction(async (tx) => {
         if (transaction.type === "DEPOSIT") {
           const diff = newAmount - oldAmount;
           if (diff > 0) {
@@ -621,7 +622,7 @@ export const emergencyRouter = createTRPCRouter({
           }
         }
 
-        const updated = await tx.emergencyTransaction.update({
+        return tx.emergencyTransaction.update({
           where: { id: input.transactionId },
           data: {
             amount: newAmount,
@@ -642,9 +643,15 @@ export const emergencyRouter = createTRPCRouter({
             },
           },
         });
-
-        return updated;
       });
+
+      if (oldPublicId) {
+        await deleteCloudinaryAsset(oldPublicId).catch((err) => {
+          console.error("Failed to delete old Cloudinary asset on edit:", err);
+        });
+      }
+
+      return updated;
     }),
 
   /**

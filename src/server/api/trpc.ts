@@ -11,15 +11,14 @@ import type { ProjectRole } from "@prisma/client";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import z, { ZodError } from "zod";
-
-import { auth } from "~/server/better-auth";
-import { db } from "~/server/db";
 import {
   getProjectRole,
   isAdminOrExecutive,
   requireAdmin,
   requireProjectRole,
 } from "~/server/api/helpers/permission";
+import { auth } from "~/server/better-auth";
+import { db } from "~/server/db";
 
 /**
  * 1. CONTEXT
@@ -186,8 +185,8 @@ export const protectedProcedure = t.procedure
 /**
  * Admin-only procedure
  *
- * Only accessible to users with ADMIN or EXECUTIVE role.
- * Use this for sensitive operations like user management, approvals, etc.
+ * Only accessible to users with strictly ADMIN role (excludes EXECUTIVE).
+ * Use this for administrative mutations like project/user management and approvals.
  */
 export const adminProcedure = t.procedure
   .use(timingMiddleware)
@@ -210,13 +209,11 @@ export const adminProcedure = t.procedure
       });
     }
 
-    // Check if user has admin role
-    if (!isAdminOrExecutive(roleGlobal)) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Akses Administrator atau Eksekutif diperlukan.",
-      });
-    }
+    // Only strict ADMIN can perform admin mutations
+    requireAdmin(
+      roleGlobal,
+      "Operasi ini hanya dapat dilakukan oleh Administrator.",
+    );
 
     return next({
       ctx: {

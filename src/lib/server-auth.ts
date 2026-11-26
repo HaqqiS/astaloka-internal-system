@@ -34,14 +34,14 @@ export async function requireAuth() {
 }
 
 /**
- * Require admin access
- * Use this in admin pages
+ * Require strict administrator access
+ * Use this in admin-only pages (e.g. /users)
  */
 export async function requireAdmin() {
   const session = await requireAuth();
 
   const role = session?.user?.roleGlobal;
-  if (role !== "ADMIN" && role !== "EXECUTIVE") {
+  if (role !== "ADMIN") {
     redirect("/unauthorized");
   }
 

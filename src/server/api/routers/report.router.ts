@@ -385,6 +385,13 @@ export const reportRouter = createTRPCRouter({
         },
       });
 
+      if (!report) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Laporan tidak ditemukan dalam proyek ini",
+        });
+      }
+
       // Check ownership (ADMIN bypasses this)
       requireOwnership(
         report,
@@ -458,7 +465,11 @@ export const reportRouter = createTRPCRouter({
         "Hanya pembuat laporan yang dapat menghapus laporan ini",
       );
 
-      // Delete all associated media assets from Cloudinary first
+      await ctx.db.dailyReport.delete({
+        where: { id: input.reportId },
+      });
+
+      // Delete associated media assets from Cloudinary only after DB deletion succeeds
       if (report.media.length > 0) {
         await Promise.allSettled(
           report.media
@@ -475,10 +486,6 @@ export const reportRouter = createTRPCRouter({
             ),
         );
       }
-
-      await ctx.db.dailyReport.delete({
-        where: { id: input.reportId },
-      });
 
       return { success: true };
     }),
@@ -506,6 +513,13 @@ export const reportRouter = createTRPCRouter({
           projectId: ctx.projectId,
         },
       });
+
+      if (!report) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Laporan tidak ditemukan dalam proyek ini",
+        });
+      }
 
       // Check ownership
       requireOwnership(
@@ -674,6 +688,13 @@ export const reportRouter = createTRPCRouter({
           projectId: ctx.projectId,
         },
       });
+
+      if (!report) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Laporan tidak ditemukan dalam proyek ini",
+        });
+      }
 
       // Check ownership
       requireOwnership(

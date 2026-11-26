@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { deleteCloudinaryAsset } from "~/lib/cloudinary";
 import {
   buildCosmeticSlug,
   deriveShortId,
@@ -499,9 +500,101 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.project.delete({
+      const project = await ctx.db.project.findUnique({
         where: { id: input.projectId },
+        select: {
+          id: true,
+          documents: {
+            select: { publicId: true, resourceType: true },
+          },
+          dailyReports: {
+            select: {
+              media: { select: { publicId: true, resourceType: true } },
+            },
+          },
+          emergencyFund: {
+            select: {
+              transactions: { select: { publicId: true } },
+            },
+          },
+        },
       });
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Proyek tidak ditemukan",
+        });
+      }
+
+      const assetsToDelete: Array<{ publicId: string; resourceType?: string }> =
+        [];
+
+      for (const doc of project.documents) {
+        if (doc.publicId?.startsWith("astaloka/")) {
+          assetsToDelete.push({
+            publicId: doc.publicId,
+            resourceType: doc.resourceType ?? undefined,
+          });
+        }
+      }
+      for (const report of project.dailyReports) {
+        for (const media of report.media) {
+          if (media.publicId?.startsWith("astaloka/")) {
+            assetsToDelete.push({
+              publicId: media.publicId,
+              resourceType: media.resourceType ?? "image",
+            });
+          }
+        }
+      }
+      for (const tx of project.emergencyFund?.transactions ?? []) {
+        if (tx.publicId?.startsWith("astaloka/")) {
+          assetsToDelete.push({
+            publicId: tx.publicId,
+            resourceType: "image",
+          });
+        }
+      }
+
+      await ctx.db.$transaction(async (tx) => {
+        await tx.emergencyTransaction.deleteMany({
+          where: { fund: { projectId: input.projectId } },
+        });
+        await tx.emergencyFund.deleteMany({
+          where: { projectId: input.projectId },
+        });
+        await tx.logisticItem.deleteMany({
+          where: { projectId: input.projectId },
+        });
+        await tx.dailyReport.deleteMany({
+          where: { projectId: input.projectId },
+        });
+        await tx.projectDocument.deleteMany({
+          where: { projectId: input.projectId },
+        });
+        await tx.projectMember.deleteMany({
+          where: { projectId: input.projectId },
+        });
+        await tx.project.delete({
+          where: { id: input.projectId },
+        });
+      });
+
+      if (assetsToDelete.length > 0) {
+        await Promise.allSettled(
+          assetsToDelete.map((asset) =>
+            deleteCloudinaryAsset(asset.publicId, {
+              resourceType: asset.resourceType,
+            }).catch((err) => {
+              console.error(
+                `Failed to delete Cloudinary asset (${asset.publicId}):`,
+                err,
+              );
+            }),
+          ),
+        );
+      }
 
       return { success: true };
     }),
@@ -602,6 +695,18 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.projectMember.findUnique({
+        where: { id: input.memberId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Anggota proyek tidak ditemukan",
+        });
+      }
+
       const member = await ctx.db.projectMember.update({
         where: { id: input.memberId },
         data: {
@@ -633,6 +738,18 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.projectMember.findUnique({
+        where: { id: input.memberId },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Anggota proyek tidak ditemukan",
+        });
+      }
+
       await ctx.db.projectMember.delete({
         where: { id: input.memberId },
       });

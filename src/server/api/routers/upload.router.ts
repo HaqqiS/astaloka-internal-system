@@ -5,10 +5,7 @@ import {
   generateUploadSignature,
 } from "~/lib/cloudinary";
 import { extractShortIdFromSlug } from "~/lib/slug-utils";
-import {
-  isAdminOrExecutive,
-  requireProjectMembership,
-} from "~/server/api/helpers/permission";
+import { requireProjectMembership } from "~/server/api/helpers/permission";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
 export const uploadRouter = createTRPCRouter({
@@ -42,7 +39,15 @@ export const uploadRouter = createTRPCRouter({
 
       const { id: userId, roleGlobal } = ctx.session.user;
 
-      if (!isAdminOrExecutive(roleGlobal)) {
+      if (roleGlobal === "EXECUTIVE") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Eksekutif hanya memiliki akses baca dan tidak dapat mengunggah file",
+        });
+      }
+
+      if (roleGlobal !== "ADMIN") {
         const role = await requireProjectMembership(ctx.db, userId, project.id);
 
         // Validate project-level role per upload type
@@ -92,11 +97,24 @@ export const uploadRouter = createTRPCRouter({
    * Delete uploaded asset by publicId with ownership & scope validation
    */
   deleteAsset: protectedProcedure
-    .input(z.object({ publicId: z.string().min(1) }))
+    .input(
+      z.object({
+        publicId: z.string().min(1),
+        resourceType: z.enum(["image", "raw", "video"]).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const { publicId } = input;
+      const { publicId, resourceType } = input;
       const { id: userId, roleGlobal } = ctx.session.user;
       const isAdmin = roleGlobal === "ADMIN";
+
+      if (roleGlobal === "EXECUTIVE") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Eksekutif hanya memiliki akses baca dan tidak dapat menghapus aset",
+        });
+      }
 
       // Basic structure validation: must be inside app's astaloka root folder
       if (!publicId.startsWith("astaloka/") || publicId.includes("..")) {
@@ -183,7 +201,7 @@ export const uploadRouter = createTRPCRouter({
                 });
               }
 
-              if (!isAdminOrExecutive(roleGlobal)) {
+              if (!isAdmin) {
                 await requireProjectMembership(ctx.db, userId, project.id);
               }
             }
@@ -191,7 +209,7 @@ export const uploadRouter = createTRPCRouter({
         }
       }
 
-      await deleteCloudinaryAsset(publicId);
+      await deleteCloudinaryAsset(publicId, { resourceType });
       return { success: true };
     }),
 });

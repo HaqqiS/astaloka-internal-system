@@ -26,10 +26,26 @@ export function isReviewedUser(reviewedAt: Date | null | undefined): boolean {
 }
 
 /**
- * Check if user has admin privileges
+ * Check if user has admin or executive privileges (global oversight / export)
  */
 export function isAdmin(role: GlobalRole | null | undefined): boolean {
   if (!role) return false;
+  return role === "ADMIN" || role === "EXECUTIVE";
+}
+
+/**
+ * Check if user is strictly a system Administrator (excludes EXECUTIVE)
+ */
+export function isStrictAdmin(role: GlobalRole | null | undefined): boolean {
+  return role === "ADMIN";
+}
+
+/**
+ * Explicit alias for ADMIN or EXECUTIVE read/export privileges
+ */
+export function isAdminOrExecutiveRole(
+  role: GlobalRole | null | undefined,
+): boolean {
   return role === "ADMIN" || role === "EXECUTIVE";
 }
 
