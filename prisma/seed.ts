@@ -42,6 +42,7 @@ async function main() {
           roleGlobal: user.roleGlobal,
           isActive: user.isActive,
           emailVerified: true,
+          reviewedAt: user.isActive ? new Date() : null,
         },
       });
       console.log(
@@ -56,6 +57,7 @@ async function main() {
           roleGlobal: user.roleGlobal,
           isActive: user.isActive,
           emailVerified: true,
+          reviewedAt: user.isActive ? new Date() : null,
         },
       });
       console.log(

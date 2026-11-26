@@ -19,6 +19,7 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "typecheck": "tsc --noEmit"
