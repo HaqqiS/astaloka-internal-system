@@ -165,6 +165,8 @@ model Project {
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([status])
 }
 
 model ProjectMember {
@@ -179,6 +181,7 @@ model ProjectMember {
   createdAt DateTime @default(now())
 
   @@unique([userId, projectId]) // Satu user hanya punya satu role di satu project
+  @@index([projectId])
 }
 
 model DailyReport {
@@ -204,6 +207,9 @@ model DailyReport {
 
   createdAt DateTime @default(now())
   @@unique([projectId, slug])
+  @@index([projectId, reportDate(sort: Desc)])
+  @@index([reportDate(sort: Desc)])
+  @@index([userId])
 }
 
 model DailyReportTask {
@@ -249,6 +255,7 @@ model ProjectDocument {
   updatedAt   DateTime     @updatedAt
   
   @@index([projectId])
+  @@index([projectId, createdAt(sort: Desc)])
   @@index([userId])
   @@index([fileType])
 }
@@ -267,6 +274,8 @@ model ReportMedia {
   report        DailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   
   createdAt     DateTime    @default(now())
+
+  @@index([reportId])
 }
 
 model ReportComment {
@@ -316,6 +325,10 @@ model EmergencyTransaction {
   verifier    User?         @relation("VerifiedBy", fields: [verifiedById], references: [id])
 
   createdAt   DateTime      @default(now())
+
+  @@index([fundId, status])
+  @@index([fundId, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
 }
 
 model LogisticItem {
@@ -330,6 +343,7 @@ model LogisticItem {
 
   createdAt    DateTime              @default(now())
   @@unique([projectId, slug])
+  @@index([projectId, createdAt(sort: Desc)])
 }
 
 model LogisticTransaction {
@@ -344,4 +358,7 @@ model LogisticTransaction {
   user        User         @relation(fields: [userId], references: [id])
 
   createdAt   DateTime     @default(now())
+
+  @@index([itemId, createdAt(sort: Desc)])
+  @@index([userId])
 }
