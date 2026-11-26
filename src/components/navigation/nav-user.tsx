@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  IconDeviceMobile,
   IconDotsVertical,
   IconLogout,
   IconUserCircle,
 } from "@tabler/icons-react";
 import { useState } from "react";
+import { PwaInstallDialog } from "~/components/pwa/pwa-install-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import {
   DropdownMenu,
@@ -23,6 +25,7 @@ import {
 } from "~/components/ui/sidebar";
 import { AccountDialog } from "~/components/user/account-dialog";
 import { useCurrentUser } from "~/hooks";
+import { usePwaInstall } from "~/hooks/use-pwa-install";
 import { authClient } from "~/server/better-auth/client";
 
 export function NavUser({
@@ -36,7 +39,20 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [pwaDialogOpen, setPwaDialogOpen] = useState(false);
   const { data: currentUser } = useCurrentUser();
+  const { canShowMenuAction, hasNativePrompt, isIos, promptInstall } =
+    usePwaInstall();
+
+  const handleInstallApp = async () => {
+    if (hasNativePrompt) {
+      const outcome = await promptInstall();
+      if (outcome !== "unavailable") {
+        return;
+      }
+    }
+    setPwaDialogOpen(true);
+  };
 
   const displayName = currentUser?.name || user.name;
   const rawEmail = currentUser?.email || user.email;
@@ -107,6 +123,15 @@ export function NavUser({
                 <IconUserCircle />
                 Pengaturan Akun
               </DropdownMenuItem>
+              {canShowMenuAction && (
+                <DropdownMenuItem
+                  onClick={() => void handleInstallApp()}
+                  className="cursor-pointer"
+                >
+                  <IconDeviceMobile />
+                  Install Aplikasi
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
@@ -127,6 +152,11 @@ export function NavUser({
       <AccountDialog
         open={accountDialogOpen}
         onOpenChange={setAccountDialogOpen}
+      />
+      <PwaInstallDialog
+        open={pwaDialogOpen}
+        onOpenChange={setPwaDialogOpen}
+        isIos={isIos}
       />
     </>
   );

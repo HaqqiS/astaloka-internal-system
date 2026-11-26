@@ -14,8 +14,23 @@ import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
   title: "Astaloka",
+  applicationName: "Astaloka Internal",
   description: "Astaloka Interior Design",
-  icons: [{ rel: "icon", url: "/icon.webp" }],
+  icons: {
+    icon: [
+      { url: "/icon.webp" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Astaloka",
+  },
 };
 
 // Required for env(safe-area-inset-*) to work correctly on iOS (notch / home indicator)
@@ -27,6 +42,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8faf5" },
+    { media: "(prefers-color-scheme: dark)", color: "#18202c" },
+  ],
 };
 
 const inter = Inter({

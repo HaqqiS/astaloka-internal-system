@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { PageLayout } from "~/components/layout/page-layout";
+import { PwaInstallBanner } from "~/components/pwa/pwa-install-banner";
 import { cn } from "~/lib/utils";
 
 interface DashboardLayoutProps {
@@ -29,6 +30,8 @@ export function DashboardLayout({
             <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         )}
+
+        <PwaInstallBanner />
 
         {children}
       </div>
