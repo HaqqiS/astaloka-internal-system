@@ -189,3 +189,11 @@ graph TD
     LogModules --> StockAudit["Monitoring Sisa Stok & Riwayat Mutasi"]
     LogModules --> ViewReports["Lihat Laporan Progres Proyek - Read Only"]
 ```
+
+---
+
+## 6. Ekspor Laporan Bulanan (Excel API Route)
+
+- **Endpoint:** `GET /api/projects/[id]/export?month=YYYY-MM` ([`route.ts`](../src/app/api/projects/[id]/export/route.ts))
+- **Otorisasi:** Terbatas untuk `ADMIN` dan `EXECUTIVE` (read-only portfolio oversight).
+- **Logika:** Memvalidasi format bulan ketat (`01–12`), menghitung rentang tanggal dalam zona waktu WITA (`UTC+8`), lalu menghasilkan file `.xlsx` via `exceljs` dengan sanitasi teks formula spreadsheet.

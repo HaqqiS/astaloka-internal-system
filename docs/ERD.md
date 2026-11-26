@@ -7,7 +7,7 @@
 
 ## 1. Ringkasan Arsitektur Database
 
-Database **Sandaran Internal System** menggunakan **PostgreSQL** yang diakses melalui **Prisma ORM v6** (dengan dukungan **Cloudflare Hyperdrive** untuk _connection pooling_ di lingkungan Edge/Serverless). Secara struktural, skema database terdiri atas **15 tabel (model)** dan **7 tipe enumerasi (`enum`)** yang terbagi ke dalam dua kelompok fungsional:
+Database **Sandaran Internal System** menggunakan **PostgreSQL** yang diakses melalui **Prisma ORM v6** (dengan pemisahan `DATABASE_URL` untuk pooled runtime dan `DIRECT_URL` untuk migrasi skema). Secara struktural, skema database terdiri atas **15 tabel (model)** dan **7 tipe enumerasi (`enum`)** yang terbagi ke dalam dua kelompok fungsional:
 
 1. **Kelompok Autentikasi & Identitas (Better Auth + RBAC Global):**
    - `User` (`@@map("user")`)

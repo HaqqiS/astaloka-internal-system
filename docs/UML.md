@@ -315,7 +315,7 @@ flowchart TD
     %% Hapus Proyek
     Action -->|"Hapus Proyek (project.delete)"| CheckStrict{"Apakah pengguna adalah ADMIN? (strictAdminProcedure)"}
     CheckStrict -->|"Bukan"| ErrForbidDel["❌ 403 Forbidden: Hanya ADMIN yang dapat menghapus proyek"]
-    CheckStrict -->|"Ya"| DeleteProj["Hapus Project dari DB (Cascade ProjectMember & ProjectDocument)"]
+    CheckStrict -->|"Ya"| DeleteProj["Hapus relasi proyek secara transaksional di DB lalu bersihkan aset Cloudinary terkait"]
     DeleteProj --> EndFlow
     ErrInactive --> EndFlow
     ErrDup --> EndFlow
@@ -898,13 +898,12 @@ classDiagram
         +getExecutiveOverview() ExecutiveOverview
         +getExecutiveTrends() ExecutiveTrends
         +getAdminOverview() AdminOverview
-        +getAdminStats() AdminStats
-        +getExecutiveStats() ExecutiveStats
-        +getExecutiveRecentReports(limit) DailyReport[]
-        +getSupervisorStats() SupervisorStats
-        +getArchitectStats() ArchitectStats
-        +getFinanceStats() FinanceStats
-        +getLogisticStats() LogisticStats
+        +getUserOverview() UserOverview
+    }
+
+    class exportApiRoute {
+        <<rest-route>>
+        +GET /api/projects/[id]/export?month=YYYY-MM
     }
 
     %% ==========================================

@@ -70,7 +70,7 @@ Sistem membedakan peran menjadi dua tingkatan: **Global Role** (tingkat sistem) 
    - _Wewenang_: Akses menyeluruh tanpa batas, manajemen akun pengguna, inisiasi proyek baru, bypass validasi kepemilikan.
 2. **Executive (`EXECUTIVE` — sebelumnya CEO)**:
    - _Persona_: Pemilik Studio / Direktur Utama.
-   - _Wewenang_: Akses pengawasan portofolio menyeluruh ke seluruh proyek, menyetujui user baru, membuat proyek, dan memantau analitik keuangan & logistik.
+   - _Wewenang_: Akses pengawasan portofolio menyeluruh ke seluruh proyek secara _read-only_ (memantau progres, analitik keuangan & logistik, serta mengekspor rekap laporan bulanan), ditambah kemampuan menulis komentar umpan balik pada laporan harian; pengelolaan pengguna dan proyek tetap dilakukan oleh Admin.
 3. **User (`USER`)**:
    - _Persona_: Karyawan umum / staf lapangan / konsultan luar.
    - _Wewenang_: Hanya dapat mengakses menu setelah akun di-approve dan ditugaskan ke salah satu proyek aktif.
@@ -97,14 +97,14 @@ Sistem membedakan peran menjadi dua tingkatan: **Global Role** (tingkat sistem) 
 ### 4.1 Modul Pengguna & Autentikasi (Auth & User Management)
 
 - **Registrasi & Onboarding**: Pengguna dapat mendaftar menggunakan email atau nomor telepon (Better Auth). Akun baru berstatus `isActive: false` dan `roleGlobal: NONE`.
-- **Persetujuan Akun (Approval Gate)**: Admin dan Executive dapat menyetujui akun baru melalui dialog approval, mengaktifkan status `isActive: true`, serta menetapkan `roleGlobal` dan role proyek awal.
+- **Persetujuan Akun (Approval Gate)**: Admin dapat menyetujui akun baru melalui dialog approval, mengaktifkan status `isActive: true`, serta menetapkan `roleGlobal` dan role proyek awal.
 - **Pencegahan Akses Ilegal**: Pengguna non-aktif secara otomatis dialihkan ke halaman penantian `/waiting-approval`.
 - **Sesi Terhidrasi**: Sesi pengguna diambil di server layout dan didistribusikan ke client store Zustand secara reaktif.
 
 ### 4.2 Modul Manajemen Proyek (Project Management)
 
-- **Inisiasi Proyek**: Admin dan Executive dapat membuat proyek baru dengan nama, lokasi, deskripsi, tanggal mulai/selesai, serta slug unik otomatis (contoh: `/projects/villa-canggu`).
-- **Pengelolaan Member**: Admin dan Executive dapat menambah, mengubah peran, atau menghapus anggota proyek (`SUPERVISOR`, `ARCHITECT`, `FINANCE`, `LOGISTIC`). Satu pengguna hanya memiliki 1 peran per proyek.
+- **Inisiasi Proyek**: Admin dapat membuat proyek baru dengan nama, lokasi, deskripsi, tanggal mulai/selesai, serta slug unik otomatis (contoh: `/projects/villa-canggu`).
+- **Pengelolaan Member**: Admin dapat menambah, mengubah peran, atau menghapus anggota proyek (`SUPERVISOR`, `ARCHITECT`, `FINANCE`, `LOGISTIC`). Satu pengguna hanya memiliki 1 peran per proyek.
 - **Status Proyek**: Mendukung status siklus hidup `ACTIVE`, `DONE`, dan `PAUSED`.
 
 ### 4.3 Modul Laporan Harian (Daily Progress Reports)
@@ -119,6 +119,7 @@ Sistem membedakan peran menjadi dua tingkatan: **Global Role** (tingkat sistem) 
 - **Dokumentasi Foto Lapangan (`ReportMedia`)**: Pengunggahan foto bukti pekerjaan langsung ke Cloudinary melalui signed payload.
 - **Kolom Diskusi & Komentar (`ReportComment`)**: Seluruh anggota proyek dan Executive dapat memberikan catatan atau pertanyaan umpan balik dalam antarmuka gelembung chat (_chat bubbles_).
 - **Hak Edit Berbasis Kepemilikan**: Laporan hanya dapat diubah atau dihapus oleh pembuat aslinya (atau Admin).
+- **Ekspor Rekap Bulanan Excel**: Admin dan Executive dapat mengekspor ringkasan laporan harian bulanan proyek ke format `.xlsx` melalui endpoint `/api/projects/[id]/export`.
 
 ### 4.4 Modul Kas Darurat (Emergency Fund / Kas Kecil)
 
@@ -185,9 +186,9 @@ Dashboard utama menyajikan antarmuka adaptif sesuai peran pengguna:
 
 ### 5.3 Performa & Infrastruktur Cloud
 
-- **Edge Runtime**: Aplikasi dioptimalkan untuk berjalan di jaringan serverless Cloudflare Workers menggunakan OpenNext.
-- **Connection Pooling Efisien**: Pemanfaatan Cloudflare Hyperdrive (`HYPERDRIVE`) untuk pooling koneksi berlatensi rendah ke PostgreSQL (`max: 5`).
-- **Media CDN**: File foto dan dokumen disimpan di Cloudinary dengan signed parameter client-to-cloud upload, meminimalkan beban memori pada serverless worker.
+- **Platform-Agnostic Node.js Runtime**: Aplikasi dioptimalkan untuk berjalan di runtime Node.js Next.js (mendukung Vercel, Netlify, Railway, Render, atau container standar).
+- **Connection Pooling Efisien**: Pemanfaatan `PrismaClient` singleton dengan managed connection pooler (PgBouncer / `DATABASE_URL` pooled & `DIRECT_URL` untuk migrasi).
+- **Media CDN**: File foto dan dokumen disimpan di Cloudinary dengan signed parameter client-to-cloud upload, meminimalkan beban memori pada server aplikasi.
 
 ---
 
@@ -201,8 +202,8 @@ Status proyek saat ini berada pada tahap **Active Development & Field Testing Ph
 | **M2: Modul Operasional Inti**            | Pembangunan fitur Proyek, Laporan Harian, Kas Darurat, Logistik, dan Dokumen.                                                     |     ✅ Selesai     |
 | **M3: Nomenklatur Peran & Role Logistic** | Penambahan role `LOGISTIC`, rename `CEO ➔ EXECUTIVE` dan `MANDOR ➔ SUPERVISOR`.                                                   |     ✅ Selesai     |
 | **M4: Uji Coba Lapangan (Field Testing)** | Uji coba penginputan laporan, upload bukti kas, dan mutasi barang langsung di lokasi konstruksi nyata oleh Supervisor & Logistic. | 🟡 Sedang Berjalan |
-| **M5: Role Lenses Dashboard Remodel**     | Transformasi antarmuka dashboard menjadi sistem lensa per peran (`dashboard-remodel-spec.md`).                                    |  🔜 Direncanakan   |
-| **M6: Galeri Foto Proyek Terpadu**        | Pembangunan modul antarmuka galeri foto proyek dan feed dokumentasi linimasa.                                                     |  🔜 Direncanakan   |
+| **M5: Role Lenses Dashboard Remodel**     | Transformasi antarmuka dashboard menjadi sistem lensa per peran (Admin, Executive, serta User lenses: Supervisor, Architect, Finance, Logistic). |     ✅ Selesai     |
+| **M6: Galeri Foto Proyek Terpadu**        | Pembangunan modul antarmuka galeri foto proyek terpadu, filter dinamis, lightbox, dan feed dokumentasi linimasa.                                   |     ✅ Selesai     |
 
 ---
 

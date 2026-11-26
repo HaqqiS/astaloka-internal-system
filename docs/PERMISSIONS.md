@@ -13,8 +13,9 @@ Layer 1: Autentikasi
 └── User login valid & akun aktif (isActive = true, reviewedAt terisi)
 
 Layer 2: Global Role Check
-├── ADMIN & EXECUTIVE : Memiliki hak admin level sistem (adminProcedure)
-└── USER              : Memerlukan penugasan proyek untuk aksi operasional
+├── ADMIN     : Akses penuh sistem & mutasi administratif (adminProcedure / strictAdminProcedure)
+├── EXECUTIVE : Akses pantau portofolio seluruh proyek + ekspor + komentar feedback (read-only pada mutasi)
+└── USER      : Memerlukan penugasan proyek untuk aksi operasional
 
 Layer 3: Project Context Check
 └── Bergantung pada ProjectRole (SUPERVISOR | ARCHITECT | FINANCE | LOGISTIC)
@@ -27,11 +28,11 @@ Role sistem yang melekat permanen pada profil pengguna:
 | Role              | Kode        | Hak Akses Sistem & Catatan                                                                                                                                                                              |
 | :---------------- | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Administrator** | `ADMIN`     | **Superuser.** Akses penuh ke seluruh menu, user management, pembuatan proyek, dan bypass kepemilikan data.                                                                                             |
-| **Executive**     | `EXECUTIVE` | **Executive Access (sebelumnya CEO).** Memiliki akses `adminProcedure` (dapat memantau sistem, menyetujui user, dan membuat proyek) serta memantau seluruh proyek tanpa perlu terdaftar sebagai member. |
+| **Executive**     | `EXECUTIVE` | **Executive Oversight (sebelumnya CEO).** Memiliki akses baca menyeluruh ke seluruh proyek (`adminOrExecutiveProcedure`), dapat mengekspor laporan bulanan dan menulis komentar feedback pada laporan harian, serta bersifat **read-only** terhadap seluruh mutasi proyek, manajemen user, dan operasional lapangan. |
 | **User**          | `USER`      | **Akses Standar.** Akses operasional proyek ditentukan oleh `ProjectRole` di mana user ditugaskan.                                                                                                      |
 | **None**          | `NONE`      | **User Menunggu Persetujuan.** Tidak memiliki akses operasional hingga disetujui (`/waiting-approval`).                                                                                                 |
 
-> **Catatan Keselarasan Kode:** Pada tRPC guard `adminProcedure`, fungsi pengecekan `isAdmin(role)` memvalidasi apakah user memiliki role `ADMIN` atau `EXECUTIVE` (sebelumnya `CEO`). Oleh karena itu, baik Admin maupun Executive memiliki akses ke endpoint administratif (manajemen pengguna dan inisiasi proyek).
+> **Catatan Keselarasan Kode:** Pada `src/server/api/trpc.ts`, `adminProcedure` dan `strictAdminProcedure` hanya mengizinkan `roleGlobal === "ADMIN"` untuk seluruh mutasi administratif (manajemen pengguna & proyek). Sementara itu, `adminOrExecutiveProcedure` mengizinkan `ADMIN` dan `EXECUTIVE` untuk endpoint read-only (dashboard eksekutif, daftar proyek, analitik). Di level proyek (`projectProcedure`), mutasi untuk `EXECUTIVE` otomatis diblokir kecuali `allowExecutive: true` (khusus `comment.create`/`update`/`delete` milik sendiri).
 
 ---
 
@@ -92,13 +93,13 @@ flowchart TD
 
 ### A. Tindakan Global (Tanpa Konteks Proyek)
 
-| Aksi / Prosedur    | ADMIN | EXECUTIVE | USER | Catatan                                                 |
-| :----------------- | :---: | :-------: | :--: | :------------------------------------------------------ |
-| `SYSTEM_ACCESS`    |  ✅   |    ✅     |  ✅  | User aktif dan disetujui (`roleGlobal != NONE`)         |
-| `USER_MANAGEMENT`  |  ✅   |    ✅     |  ❌  | List, approve, dan kelola peran user (`adminProcedure`) |
-| `PROJECT_CREATE`   |  ✅   |    ✅     |  ❌  | Inisiasi proyek baru (`adminProcedure`)                 |
-| `PROJECT_LIST_ALL` |  ✅   |    ✅     |  ❌  | Membaca semua proyek tanpa filter member                |
-| `PROFILE_EDIT_OWN` |  ✅   |    ✅     |  ✅  | Setiap user berhak mengedit profil sendiri              |
+| Aksi / Prosedur    | ADMIN | EXECUTIVE | USER | Catatan                                                           |
+| :----------------- | :---: | :-------: | :--: | :---------------------------------------------------------------- |
+| `SYSTEM_ACCESS`    |  ✅   |    ✅     |  ✅  | User aktif dan disetujui (`roleGlobal != NONE`)                   |
+| `USER_MANAGEMENT`  |  ✅   |    ❌     |  ❌  | Kelola & approval user hanya oleh Administrator (`adminProcedure`)|
+| `PROJECT_CREATE`   |  ✅   |    ❌     |  ❌  | Inisiasi proyek baru hanya oleh Administrator (`adminProcedure`)  |
+| `PROJECT_LIST_ALL` |  ✅   |    📖     |  ❌  | Membaca semua proyek tanpa filter member (`adminOrExecutive`)     |
+| `PROFILE_EDIT_OWN` |  ✅   |    ✅     |  ✅  | Setiap user berhak mengedit profil sendiri                        |
 
 ---
 
@@ -109,8 +110,10 @@ flowchart TD
 | Modul / Aksi             | ADMIN | EXECUTIVE | SUPERVISOR | ARCHITECT | FINANCE | LOGISTIC | Catatan                                           |
 | :----------------------- | :---: | :-------: | :--------: | :-------: | :-----: | :------: | :------------------------------------------------ |
 | **Lihat Detail Proyek**  |  ✅   |    📖     |     ✅     |    ✅     |   ✅    |    ✅    | Anggota melihat proyek yang diikutinya            |
-| **Kelola Member Proyek** |  ✅   |    ✅     |     ❌     |    ❌     |   ❌    |    ❌    | Admin & Executive dapat menambah/mengubah anggota |
-| **Edit Data Proyek**     |  ✅   |    ✅     |     ❌     |    ❌     |   ❌    |    ❌    | Update nama, deskripsi, tenggat waktu             |
+| **Kelola Member Proyek** |  ✅   |    ❌     |     ❌     |    ❌     |   ❌    |    ❌    | Hanya Administrator dapat menambah/mengubah tim   |
+| **Edit Data Proyek**     |  ✅   |    ❌     |     ❌     |    ❌     |   ❌    |    ❌    | Hanya Administrator update nama/deskripsi/tenggat |
+| **Hapus Proyek**         |  ✅   |    ❌     |     ❌     |    ❌     |   ❌    |    ❌    | Hanya Administrator (`strictAdminProcedure`)      |
+| **Ekspor Laporan Excel** |  ✅   |    📖     |     ❌     |    ❌     |   ❌    |    ❌    | Ekspor rekap bulanan proyek (`/api/.../export`)   |
 
 #### 2. Laporan Harian (Daily Reports)
 
@@ -172,12 +175,14 @@ flowchart TD
 
 ### B. Prosedur yang Tersedia di `src/server/api/trpc.ts`
 
-| Prosedur                  | Kapan Digunakan                                                  | Konteks yang Disediakan                           |
-| :------------------------ | :--------------------------------------------------------------- | :------------------------------------------------ |
-| `publicProcedure`         | Informasi publik atau pengecekan server                          | `ctx.db`                                          |
-| `protectedProcedure`      | Pengguna yang sudah login aktif                                  | `ctx.session.user`, `ctx.db`                      |
-| `adminProcedure`          | Khusus pengguna dengan `roleGlobal === 'ADMIN' \|\| 'EXECUTIVE'` | `ctx.session.user` (jaminan Admin/Executive)      |
-| `projectProcedure(roles)` | Prosedur operasional modul proyek                                | `ctx.projectId`, `ctx.projectRole`, `ctx.session` |
+| Prosedur                     | Kapan Digunakan                                                      | Konteks yang Disediakan                           |
+| :--------------------------- | :------------------------------------------------------------------- | :------------------------------------------------ |
+| `publicProcedure`            | Informasi publik atau pengecekan server                              | `ctx.db`                                          |
+| `protectedProcedure`         | Pengguna yang sudah login aktif                                      | `ctx.session.user`, `ctx.db`                      |
+| `adminProcedure`             | Khusus `roleGlobal === 'ADMIN'` (mutasi administratif)               | `ctx.session.user` (jaminan Admin)                |
+| `strictAdminProcedure`       | Alias eksplisit khusus `ADMIN` untuk aksi destruktif                 | `ctx.session.user` (jaminan Admin)                |
+| `adminOrExecutiveProcedure`  | Akses baca/analitik untuk `ADMIN` atau `EXECUTIVE`                   | `ctx.session.user`                                |
+| `projectProcedure(roles)`    | Prosedur operasional modul proyek (`EXECUTIVE` otomatis read-only)   | `ctx.projectId`, `ctx.projectRole`, `ctx.session` |
 
 ### C. Contoh Implementasi
 

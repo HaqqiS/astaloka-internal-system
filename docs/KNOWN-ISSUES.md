@@ -6,24 +6,16 @@
 
 ## 1. Isu Aktif & Gotchas
 
-### 1.1 Mobile UI & Responsive Overflows
-
-- **Tabel Data di Layar Kecil**: Tampilan data-table pada halaman detail proyek (`/projects/[slug]`) dan Emergency Fund masih mengalami horizontal overflow pada perangkat dengan lebar layar < 360px.
-- **Warna Indikator Chart**: Perlu penyesuaian kontras warna dan kurva indikator chart kas darurat pada mode tema gelap (_dark theme_).
-
-### 1.2 iOS Safari Virtual Keyboard Zoom & Overlay Scroll
-
-- **Auto-Zoom pada Input Form**: Pada peramban iOS Safari, elemen form (`CommandInput`, `Input`, `Textarea`) yang memiliki ukuran font di bawah `16px` (`text-sm`) akan memicu zoom otomatis saat disentuh.
-- **Scroll Gestures dalam Drawer**: Interaksi scroll daftar item panjang di dalam modal Vaul Drawer memerlukan penanganan gesture khusus (`data-vaul-no-drag`) agar interaksi swipe keyboard atau daftar tidak menutup drawer secara tidak sengaja.
-
-### 1.3 Perizinan & Header Keamanan (Security & RBAC Minor Limitations)
-
-- **Visibilitas Tombol Hapus Proyek untuk Role EXECUTIVE**: Prosedur backend `project.delete` sudah diproteksi ketat menggunakan `strictAdminProcedure` (hanya role `ADMIN`). Namun di UI (`projects-client.tsx`), opsi "Hapus" pada dropdown menu masih tampak bagi pengguna dengan peran `EXECUTIVE` karena dibungkus helper `canManage`. Saat dikonfirmasi, server dengan benar menolak aksi dengan notifikasi error *"Operasi ini hanya dapat dilakukan oleh Administrator"*. Ke depan, visibilitas tombol ini di UI sebaiknya langsung disembunyikan jika `roleGlobal !== "ADMIN"`.
 - **Header Keamanan HTTP Legacy (`X-XSS-Protection`)**: Header `X-XSS-Protection: 1; mode=block` pada `next.config.js` dipertahankan untuk backward-compatibility browser lawas. Pada standar web modern (OWASP), header ini sudah didepresiasi dan proteksi XSS diemban sepenuhnya oleh `Content-Security-Policy`.
+- **Migrasi Bertahap `src/components/reui/`**: Primitif inti (`badge`, `data-grid`, `filters`, `stepper`, `item`, `message`, `bubble`) telah ditempatkan di `src/components/reui/` dengan re-export kompatibilitas di `src/components/ui/`; sisa file caller akan dimigrasikan secara bertahap.
 
 ---
 
 ## 2. Riwayat Isu yang Telah Terselesaikan (Resolved)
+
+- **[RESOLVED 2026-11-26] RBAC `EXECUTIVE` Read-Only, CRUD Logistik, Mobile Tables, Theme Contrast & Pagination**:
+  - Peran `EXECUTIVE` diperketat menjadi *read-only* di backend (`adminProcedure` khusus `ADMIN`, guard upload/mutasi) maupun frontend, sambil tetap mengizinkan komentar feedback laporan (`comment.create`).
+  - Memperbaiki izin CRUD master item logistik di `item-actions.tsx` (`LOGISTIC` / `ADMIN`), menambahkan fallback mobile card untuk tabel Dana Darurat dan Dokumen (`< md`), memperbaiki kontras light/dark mode (`/emergency`, `/waiting-approval`, `/unauthorized`), mengaktifkan cursor pagination `"Muat Lebih Banyak"` pada daftar laporan, serta mengarahkan menu homepage (`About`, `Projects`, `Contact`) langsung ke section `/#about`, `/#projects`, dan `/#contact`.
 
 - **[RESOLVED 2026-10-12] Cloudinary Folder Rename — Broken URLs (404)**:
   Telah diselesaikan secara permanen dengan arsitektur **Cosmetic Dynamic Slug** (pola Notion / Stack Overflow) dan **Permanent Storage Key**:
@@ -35,6 +27,8 @@
   Glitch tampilan mobile saat keyboard virtual muncul telah diatasi dengan merombak navigasi menjadi Mobile Bottom Navigation (`MobileBottomNav`) dan dialog pemilih proyek menggunakan Vaul Drawer mandiri (`ProjectSwitcherDrawer`).
 - **[RESOLVED 2026-10-21] Galeri Foto Dokumentasi Proyek (Project Galleries)**:
   Telah diimplementasikan secara terpadu di `/projects/[slug]/gallery` dengan tampilan Timeline harian, integrasi Dynamic FilterBar (cuaca, tanggal, pelapor), Lightbox interaktif (prev/next, metadata, link laporan, unduh), serta widget preview di Overview Proyek (`GallerySection`) dan tombol pintas di header Laporan.
+- **[RESOLVED] Role Lenses Dashboard Remodel**:
+  Telah terealisasi pada `/dashboard` untuk `ADMIN`, `EXECUTIVE`, dan `USER` melalui komponen lensa peran (`SupervisorLens`, `ArchitectLens`, `FinanceLens`, `LogisticLens`) beserta router `dashboard` berbasis peran.
 - **[RESOLVED 2026-09-30] Lenis Global Scroll Conflict**:
   Konflik smooth scroll Lenis yang mengganggu interaksi form di dalam modal dialog telah diselesaikan dengan membatasi scope `SmoothScrollProvider` hanya pada halaman homepage.
 
@@ -42,5 +36,4 @@
 
 ## 3. Rencana Fitur & Backlog Mendatang
 
-- **Role Lenses Dashboard Remodel**:
-  Implementasi spesifikasi perombakan dashboard per role lens berdasarkan `docs/dashboard-remodel-spec.md`.
+- **Migrasi Bertahap `src/components/reui/`**: Konsolidasi bertahap sisa caller komponen primitif reUI (`task-list.tsx`, `member-management.tsx`, dll.) ke `src/components/reui/`.
