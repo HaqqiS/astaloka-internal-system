@@ -26,7 +26,6 @@ export const dashboardRouter = createTRPCRouter({
     const nowMs = Date.now();
 
     const [
-      activeProjectsCount,
       totalProjectsCount,
       reportsLast7Days,
       reportsPrevious7Days,
@@ -36,7 +35,6 @@ export const dashboardRouter = createTRPCRouter({
       allFundsBalance,
       monthlyWithdrawalsAgg,
     ] = await Promise.all([
-      ctx.db.project.count({ where: { status: "ACTIVE" } }),
       ctx.db.project.count(),
       ctx.db.dailyReport.count({
         where: { reportDate: { gte: sevenDaysAgo } },
@@ -101,9 +99,12 @@ export const dashboardRouter = createTRPCRouter({
           emergencyFund: {
             select: {
               currentBalance: true,
-              transactions: {
-                where: { status: "UNREVIEWED" },
-                select: { id: true },
+              _count: {
+                select: {
+                  transactions: {
+                    where: { status: "UNREVIEWED" },
+                  },
+                },
               },
             },
           },
@@ -120,6 +121,8 @@ export const dashboardRouter = createTRPCRouter({
         _sum: { amount: true },
       }),
     ]);
+
+    const activeProjectsCount = activeProjects.length;
 
     let totalWorkersToday = 0;
     let reportedProjectsTodayCount = 0;
@@ -156,7 +159,7 @@ export const dashboardRouter = createTRPCRouter({
 
       const currentBalanceNum = Number(p.emergencyFund?.currentBalance ?? 0);
       const unreviewedWithdrawalsCount =
-        p.emergencyFund?.transactions.length ?? 0;
+        p.emergencyFund?._count.transactions ?? 0;
 
       return {
         id: p.id,

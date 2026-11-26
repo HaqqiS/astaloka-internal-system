@@ -164,8 +164,21 @@ export const reportRouter = createTRPCRouter({
               image: true,
             },
           },
-          tasks: true,
-          media: true,
+          tasks: {
+            select: {
+              id: true,
+              taskName: true,
+              workerCount: true,
+              progress: true,
+            },
+          },
+          media: {
+            select: {
+              id: true,
+              url: true,
+              publicId: true,
+            },
+          },
           _count: {
             select: {
               comments: true,

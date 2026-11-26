@@ -112,89 +112,18 @@ export const projectRouter = createTRPCRouter({
    */
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const { id: userId, roleGlobal } = ctx.session.user;
+    const isGlobalViewer = isAdminOrExecutive(roleGlobal);
 
-    // EXECUTIVE and ADMIN can see all projects
-    if (roleGlobal === "EXECUTIVE" || roleGlobal === "ADMIN") {
-      const projects = await ctx.db.project.findMany({
-        include: {
-          members: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  image: true,
-                },
+    return await ctx.db.project.findMany({
+      where: isGlobalViewer
+        ? undefined
+        : {
+            members: {
+              some: {
+                userId,
               },
             },
           },
-          _count: {
-            select: {
-              dailyReports: true,
-              documents: true,
-              logistics: true,
-            },
-          },
-          dailyReports: {
-            take: 1,
-            orderBy: { reportDate: "desc" },
-            select: {
-              id: true,
-              reportDate: true,
-              progressPercent: true,
-              taskDescription: true,
-            },
-          },
-          documents: {
-            take: 2,
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              fileName: true,
-              createdAt: true,
-              fileType: true,
-            },
-          },
-          logistics: {
-            take: 2,
-            orderBy: { createdAt: "desc" },
-            select: { id: true, name: true, unit: true },
-          },
-          emergencyFund: {
-            select: {
-              currentBalance: true,
-              transactions: {
-                take: 1,
-                orderBy: { createdAt: "desc" },
-                select: {
-                  id: true,
-                  amount: true,
-                  type: true,
-                  status: true,
-                  createdAt: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-
-      return projects;
-    }
-
-    // Regular USER sees only their projects
-    const projects = await ctx.db.project.findMany({
-      where: {
-        members: {
-          some: {
-            userId,
-          },
-        },
-      },
       include: {
         members: {
           include: {
@@ -228,7 +157,12 @@ export const projectRouter = createTRPCRouter({
         documents: {
           take: 2,
           orderBy: { createdAt: "desc" },
-          select: { id: true, fileName: true, createdAt: true, fileType: true },
+          select: {
+            id: true,
+            fileName: true,
+            createdAt: true,
+            fileType: true,
+          },
         },
         logistics: {
           take: 2,
@@ -256,8 +190,6 @@ export const projectRouter = createTRPCRouter({
         createdAt: "desc",
       },
     });
-
-    return projects;
   }),
 
   /**
