@@ -29,7 +29,7 @@ import {
   useRemoveMember,
   useUpdateMemberRole,
 } from "~/hooks";
-import { isAdmin } from "~/lib/auth-guards";
+import { isStrictAdmin } from "~/lib/auth-guards";
 import { useSessionStore } from "~/stores/use-session-store";
 import { UserSelect } from "./user-select";
 
@@ -46,7 +46,7 @@ const PROJECT_ROLES: { value: ProjectRole; label: string }[] = [
 
 export function MemberManagement({ projectId }: MemberManagementProps) {
   const session = useSessionStore((state) => state.session);
-  const canManage = isAdmin(
+  const canManage = isStrictAdmin(
     session?.user?.roleGlobal as GlobalRole | null | undefined,
   );
 
@@ -232,6 +232,7 @@ export function MemberManagement({ projectId }: MemberManagementProps) {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        aria-label={`Hapus ${member.user.name || "anggota"}`}
                         onClick={() =>
                           setMemberToRemove({
                             id: member.id,

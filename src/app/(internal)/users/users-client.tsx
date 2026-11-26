@@ -1,7 +1,14 @@
 "use client";
 
-import { IconDots, IconSearch, IconUserPlus, IconX } from "@tabler/icons-react";
+import {
+  IconDots,
+  IconRefresh,
+  IconSearch,
+  IconUserPlus,
+  IconX,
+} from "@tabler/icons-react";
 import { formatDistanceToNow } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageLayout } from "~/components/layout";
@@ -50,7 +57,13 @@ export function UsersClient() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
-  const { data: users, isLoading } = useUserListWithFilter({
+  const {
+    data: users,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useUserListWithFilter({
     filter,
     search: "",
   });
@@ -191,6 +204,19 @@ export function UsersClient() {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-64 w-full" />
             </div>
+          </div>
+        ) : isError ? (
+          <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-md border p-6 text-center">
+            <p className="text-sm font-medium text-destructive">
+              Gagal memuat daftar pengguna
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              <IconRefresh className="mr-1.5 size-3.5" />
+              Coba Lagi
+            </Button>
           </div>
         ) : users && users.length > 0 ? (
           <>
@@ -333,6 +359,7 @@ export function UsersClient() {
                           <span className="text-muted-foreground">
                             {formatDistanceToNow(new Date(user.createdAt), {
                               addSuffix: true,
+                              locale: idLocale,
                             })}
                           </span>
                         </div>

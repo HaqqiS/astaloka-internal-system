@@ -4,6 +4,7 @@ import type { GlobalRole } from "@prisma/client";
 import { IconDots } from "@tabler/icons-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -65,7 +66,7 @@ export function getUserColumns(): ColumnDef<UserListItem>[] {
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Nama",
       cell: ({ row }) => {
         const user = row.original;
         return (
@@ -133,7 +134,10 @@ export function getUserColumns(): ColumnDef<UserListItem>[] {
         const date = row.original.createdAt;
         return (
           <span className="text-sm text-muted-foreground">
-            {formatDistanceToNow(new Date(date), { addSuffix: true })}
+            {formatDistanceToNow(new Date(date), {
+              addSuffix: true,
+              locale: idLocale,
+            })}
           </span>
         );
       },

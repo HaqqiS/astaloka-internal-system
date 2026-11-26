@@ -4,6 +4,7 @@
 import { IconCalendar } from "@tabler/icons-react";
 import { useForm } from "@tanstack/react-form";
 import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { useEffect, useImperativeHandle } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -298,7 +299,9 @@ export function ProjectForm({
                       >
                         <IconCalendar className="mr-2 h-4 w-4" />
                         {field.state.value
-                          ? format(field.state.value, "PPP")
+                          ? format(field.state.value, "PPP", {
+                              locale: idLocale,
+                            })
                           : "Pilih tanggal"}
                       </Button>
                     </PopoverTrigger>
@@ -345,7 +348,9 @@ export function ProjectForm({
                       >
                         <IconCalendar className="mr-2 h-4 w-4" />
                         {field.state.value
-                          ? format(field.state.value, "PPP")
+                          ? format(field.state.value, "PPP", {
+                              locale: idLocale,
+                            })
                           : "Pilih tanggal"}
                       </Button>
                     </PopoverTrigger>

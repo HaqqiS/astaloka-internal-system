@@ -15,22 +15,9 @@ export {
 // Dashboard hooks
 export {
   useAdminOverview,
-  useAdminStats,
-  useArchitectDashboard,
-  useArchitectStats,
   useExecutiveOverview,
-  useExecutiveRecentReports,
-  useExecutiveStats,
   useExecutiveTrends,
-  useFinanceFundBreakdown,
   useFinanceRecentTransactions,
-  useFinanceStats,
-  useLogisticRecentTransactions,
-  useLogisticStats,
-  useMandorRecentReports,
-  useMandorStats,
-  useSupervisorRecentReports,
-  useSupervisorStats,
   useUserOverview,
 } from "./useDashboard";
 // Document hooks
@@ -82,6 +69,7 @@ export {
   useDeleteReport,
   useDeleteReportMedia,
   useDeleteReportTask,
+  useInfiniteReportsByProject,
   useProjectGalleryMedia,
   useRecentReportsByProject,
   useReport,

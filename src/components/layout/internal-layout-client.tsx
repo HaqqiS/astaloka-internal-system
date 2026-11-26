@@ -2,15 +2,14 @@
 
 import type { GlobalRole } from "@prisma/client";
 import {
-  IconArrowLeft,
-  // IconCoin,
+  IconCoin,
   IconDashboard,
-  // IconFileText,
+  IconFileText,
   IconFolder,
   IconInnerShadowTop,
   IconNews,
-  // IconPackage,
-  // IconReport,
+  IconPackage,
+  IconPhoto,
   IconUsers,
 } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
@@ -48,7 +47,7 @@ function getSidebarConfig(
     user: {
       name: user.name ?? "User",
       email: user.email,
-      avatar: user.image ?? "/avatars/default.jpg",
+      avatar: user.image ?? "",
     },
     navMain: [
       {
@@ -108,15 +107,43 @@ function getSidebarConfig(
         return {
           ...baseConfig,
           navMain: [
+            ...baseConfig.navMain,
             {
-              title: "Kembali ke Semua Proyek",
+              title: "Semua Proyek",
               url: "/projects",
-              icon: IconArrowLeft,
+              icon: IconFolder,
+            },
+          ],
+          navDocuments: [
+            {
+              name: "Ringkasan Proyek",
+              url: `/projects/${projectSlug}`,
+              icon: IconFolder,
             },
             {
-              title: "Laporan Proyek",
+              name: "Laporan",
               url: `/projects/${projectSlug}/reports`,
               icon: IconNews,
+            },
+            {
+              name: "Galeri Foto",
+              url: `/projects/${projectSlug}/gallery`,
+              icon: IconPhoto,
+            },
+            {
+              name: "Kas Darurat",
+              url: `/projects/${projectSlug}/emergency`,
+              icon: IconCoin,
+            },
+            {
+              name: "Logistik",
+              url: `/projects/${projectSlug}/logistics`,
+              icon: IconPackage,
+            },
+            {
+              name: "Dokumen",
+              url: `/projects/${projectSlug}/documents`,
+              icon: IconFileText,
             },
           ],
         };

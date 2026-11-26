@@ -1,16 +1,38 @@
 "use client";
 
+import {
+  IconArrowBackUp,
+  IconDotsVertical,
+  IconEdit,
+  IconPhoto,
+  IconRefresh,
+  IconSearch,
+  IconTrash,
+  IconX,
+} from "@tabler/icons-react";
 import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ConfirmDeleteDialog } from "~/components/shared/confirm-delete-dialog";
-import { MediaPreview } from "~/components/shared/media-preview";
-import { DataGrid } from "~/components/ui/data-grid";
+import { Badge } from "~/components/reui/badge";
+import { DataGrid } from "~/components/reui/data-grid";
 import {
   FilterBar,
   type FilterField,
   useDynamicFilters,
-} from "~/components/ui/filters";
+} from "~/components/reui/filters";
+import { ConfirmDeleteDialog } from "~/components/shared/confirm-delete-dialog";
+import { MediaPreview } from "~/components/shared/media-preview";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent } from "~/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import { Input } from "~/components/ui/input";
+import { Skeleton } from "~/components/ui/skeleton";
 import {
   useDeleteEmergencyTransaction,
   useEmergencyTransactions,
@@ -28,17 +50,16 @@ const EMERGENCY_FILTER_FIELDS: FilterField[] = [
     id: "type",
     label: "Tipe Transaksi",
     options: [
-      { label: "Dana Masuk (Deposit)", value: "DEPOSIT" },
-      { label: "Dana Keluar (Tarik Dana)", value: "WITHDRAWAL" },
+      { label: "Deposit", value: "DEPOSIT" },
+      { label: "Withdrawal", value: "WITHDRAWAL" },
     ],
   },
   {
     id: "status",
     label: "Status Tinjauan",
     options: [
-      { label: "Belum Ditinjau", value: "UNREVIEWED" },
-      { label: "Disetujui", value: "REVIEWED" },
-      { label: "Ditolak", value: "REJECTED" },
+      { label: "Menunggu Tinjauan", value: "UNREVIEWED" },
+      { label: "Terverifikasi", value: "REVIEWED" },
     ],
   },
   {
@@ -75,8 +96,15 @@ export function TransactionList({
   currentUserId,
   isAdmin,
 }: TransactionListProps) {
-  const { data: transactions, isLoading } = useEmergencyTransactions(projectId);
+  const {
+    data: transactions,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useEmergencyTransactions(projectId);
   const deleteTransaction = useDeleteEmergencyTransaction();
+  const [searchQuery, setSearchQuery] = useState("");
   const [verifyTarget, setVerifyTarget] = useState<{
     id: string;
     mode: "review" | "undo";
@@ -202,6 +230,14 @@ export function TransactionList({
     });
   }, [transactions, activeFilters]);
 
+  const mobileFilteredTransactions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return filteredTransactions;
+    return filteredTransactions.filter((tx) =>
+      tx.description.toLowerCase().includes(q),
+    );
+  }, [filteredTransactions, searchQuery]);
+
   const columns = getEmergencyTransactionColumns({
     canReview,
     canEditDelete,
@@ -212,17 +248,73 @@ export function TransactionList({
   });
 
   if (isLoading) {
-    return <div className="p-4 text-center">Memuat transaksi...</div>;
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-9 w-full rounded-lg" />
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border p-8 text-center">
+        <p className="text-sm font-medium text-destructive">
+          Gagal memuat transaksi dana darurat
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+        </p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          <IconRefresh className="mr-1.5 size-3.5" />
+          Coba Lagi
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4 min-w-0 w-full">
-      <DataGrid
-        columns={columns}
-        data={filteredTransactions}
-        filterColumn="description"
-        filterPlaceholder="Cari keterangan transaksi..."
-        toolbarActions={
+      {/* ── Mobile (< md): Card View ─────────────────── */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <div className="flex flex-col gap-2">
+          <div className="relative flex items-center">
+            <IconSearch className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
+            <Input
+              id="emergency-mobile-search"
+              name="emergency-mobile-search"
+              aria-label="Cari keterangan transaksi"
+              placeholder="Cari keterangan transaksi..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9 text-base"
+            />
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 size-8"
+                onClick={() => setSearchQuery("")}
+                aria-label="Hapus pencarian"
+              >
+                <IconX className="size-4" />
+              </Button>
+            )}
+          </div>
           <FilterBar
             fields={EMERGENCY_FILTER_FIELDS}
             activeFilters={activeFilters}
@@ -230,29 +322,207 @@ export function TransactionList({
             onRemoveFilter={removeFilter}
             onResetFilters={resetFilters}
           />
-        }
-        initialColumnPinning={{
-          left: ["description"],
-          right: ["actions"],
-        }}
-        exportFilename="transaksi-dana-darurat"
-        csvColumns={[
-          {
-            header: "Tanggal",
-            accessor: (row) =>
-              format(new Date(row.createdAt), "yyyy-MM-dd HH:mm"),
-          },
-          { header: "Keterangan", accessor: (row) => row.description },
-          { header: "Tipe", accessor: (row) => row.type },
-          { header: "Jumlah (IDR)", accessor: (row) => Number(row.amount) },
-          { header: "Status", accessor: (row) => row.status },
-          {
-            header: "Pengaju",
-            accessor: (row) => row.requester?.name ?? "-",
-          },
-        ]}
-        emptyMessage="Tidak ada transaksi ditemukan."
-      />
+        </div>
+
+        {mobileFilteredTransactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Tidak ada transaksi ditemukan.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {mobileFilteredTransactions.map((tx) => {
+              const showReview = canReview && tx.status === "UNREVIEWED";
+              const showUndoReview = canReview && tx.status === "REVIEWED";
+              const showEditDelete = canEditDelete(tx);
+              const isDeposit = tx.type === "DEPOSIT";
+
+              return (
+                <Card key={tx.id}>
+                  <CardContent className="flex flex-col gap-3 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-snug">
+                          {tx.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(
+                            new Date(tx.createdAt),
+                            "dd MMM yyyy, HH:mm",
+                            {
+                              locale: idLocale,
+                            },
+                          )}
+                        </p>
+                      </div>
+
+                      {(showEditDelete || showUndoReview) && (
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Aksi lainnya"
+                            >
+                              <IconDotsVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {showUndoReview && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  setVerifyTarget({ id: tx.id, mode: "undo" })
+                                }
+                              >
+                                <IconArrowBackUp className="mr-2 size-4" />
+                                Batalkan Tinjauan
+                              </DropdownMenuItem>
+                            )}
+                            {showEditDelete && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditClick(tx)}
+                                >
+                                  <IconEdit className="mr-2 size-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() =>
+                                    setDeleteTarget({
+                                      id: tx.id,
+                                      description: tx.description,
+                                    })
+                                  }
+                                >
+                                  <IconTrash className="mr-2 size-4" />
+                                  Hapus
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant={isDeposit ? "default" : "secondary"}>
+                          {isDeposit ? "Deposit" : "Withdrawal"}
+                        </Badge>
+                        <Badge
+                          variant={
+                            tx.status === "REVIEWED" ? "success" : "warning"
+                          }
+                        >
+                          {tx.status === "REVIEWED"
+                            ? "Terverifikasi"
+                            : "Menunggu Tinjauan"}
+                        </Badge>
+                      </div>
+
+                      <span
+                        className={`text-sm font-semibold tabular-nums ${
+                          isDeposit
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {isDeposit ? "+" : "-"}
+                        Rp {Number(tx.amount).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+
+                    {(tx.url || showReview) && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2.5">
+                        {tx.url ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLightboxImage(tx.url)}
+                            className="gap-1.5"
+                          >
+                            <IconPhoto className="size-3.5" />
+                            <span>Lihat Bukti</span>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Tanpa bukti
+                          </span>
+                        )}
+
+                        {showReview && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() =>
+                              setVerifyTarget({ id: tx.id, mode: "review" })
+                            }
+                          >
+                            Tinjau
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop: DataGrid View ───────────────────── */}
+      <div className="hidden md:block">
+        <DataGrid
+          columns={columns}
+          data={filteredTransactions}
+          filterColumn="description"
+          filterPlaceholder="Cari keterangan transaksi..."
+          toolbarActions={
+            <FilterBar
+              fields={EMERGENCY_FILTER_FIELDS}
+              activeFilters={activeFilters}
+              onAddFilter={addFilter}
+              onRemoveFilter={removeFilter}
+              onResetFilters={resetFilters}
+            />
+          }
+          initialColumnPinning={{
+            left: ["description"],
+            right: ["actions"],
+          }}
+          exportFilename="transaksi-dana-darurat"
+          csvColumns={[
+            {
+              header: "Tanggal",
+              accessor: (row) =>
+                format(new Date(row.createdAt), "yyyy-MM-dd HH:mm"),
+            },
+            { header: "Keterangan", accessor: (row) => row.description },
+            {
+              header: "Tipe",
+              accessor: (row) =>
+                row.type === "DEPOSIT" ? "Deposit" : "Withdrawal",
+            },
+            { header: "Jumlah (IDR)", accessor: (row) => Number(row.amount) },
+            {
+              header: "Status",
+              accessor: (row) =>
+                row.status === "REVIEWED"
+                  ? "Terverifikasi"
+                  : "Menunggu Tinjauan",
+            },
+            {
+              header: "Pengaju",
+              accessor: (row) => row.requester?.name ?? "-",
+            },
+          ]}
+          emptyMessage="Tidak ada transaksi ditemukan."
+        />
+      </div>
 
       {/* Review / Undo Review Dialog */}
       <VerifyDialog

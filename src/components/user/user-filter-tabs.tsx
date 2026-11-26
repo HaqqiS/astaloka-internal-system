@@ -23,15 +23,17 @@ export function UserFilterTabs({
   return (
     <Tabs value={value} onValueChange={(v) => onValueChange(v as FilterValue)}>
       <TabsList>
-        <TabsTrigger value="all">All {counts && `(${counts.all})`}</TabsTrigger>
+        <TabsTrigger value="all">
+          Semua {counts && `(${counts.all})`}
+        </TabsTrigger>
         <TabsTrigger value="pending">
-          Pending {counts && `(${counts.pending})`}
+          Menunggu {counts && `(${counts.pending})`}
         </TabsTrigger>
         <TabsTrigger value="active">
-          Active {counts && `(${counts.active})`}
+          Aktif {counts && `(${counts.active})`}
         </TabsTrigger>
         <TabsTrigger value="rejected">
-          Rejected {counts && `(${counts.rejected})`}
+          Ditolak {counts && `(${counts.rejected})`}
         </TabsTrigger>
       </TabsList>
     </Tabs>

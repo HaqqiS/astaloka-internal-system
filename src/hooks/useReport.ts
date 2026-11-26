@@ -24,6 +24,16 @@ export function useReportsByProject(
   );
 }
 
+export function useInfiniteReportsByProject(projectId: string, limit = 20) {
+  return api.report.getByProject.useInfiniteQuery(
+    { projectId, limit },
+    {
+      enabled: !!projectId,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
+}
+
 export function useProjectGalleryMedia(
   projectId: string,
   limit = 60,

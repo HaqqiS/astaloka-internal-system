@@ -95,12 +95,12 @@ export function DocumentsSection({
             ({totalCount} file dalam {typeCount} kategori)
           </span>
         </div>
-        <Link href={`/projects/${projectSlug}/documents`}>
-          <Button variant="ghost" size="sm" className="gap-1">
+        <Button variant="ghost" size="sm" className="gap-1" asChild>
+          <Link href={`/projects/${projectSlug}/documents`}>
             Lihat Semua
             <IconChevronRight className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (

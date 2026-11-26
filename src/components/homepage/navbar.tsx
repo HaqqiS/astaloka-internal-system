@@ -19,9 +19,9 @@ import { authClient } from "~/server/better-auth/client";
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
-  { label: "About", href: "/about" },
-  { label: "Projects", href: "/projects" },
-  { label: "Contact", href: "/contact" },
+  { label: "About", href: "/#about" },
+  { label: "Projects", href: "/#projects" },
+  { label: "Contact", href: "/#contact" },
 ] as const;
 
 const SOCIAL_LINKS = [
@@ -242,6 +242,22 @@ function MenuOverlay({ isOpen, onClose, session }: MenuOverlayProps) {
               <ul className="flex flex-col gap-0">
                 {NAV_LINKS.map((link) => {
                   const isActive = pathname === link.href;
+                  const handleAnchorClick = (
+                    e: React.MouseEvent<HTMLAnchorElement>,
+                  ) => {
+                    onClose();
+                    if (pathname === "/" && link.href.startsWith("/#")) {
+                      e.preventDefault();
+                      const sectionId = link.href.slice(2);
+                      window.history.replaceState(null, "", link.href);
+                      window.setTimeout(() => {
+                        document.getElementById(sectionId)?.scrollIntoView({
+                          behavior: "smooth",
+                          block: sectionId === "contact" ? "end" : "start",
+                        });
+                      }, 150);
+                    }
+                  };
                   return (
                     <li
                       key={link.href}
@@ -256,7 +272,7 @@ function MenuOverlay({ isOpen, onClose, session }: MenuOverlayProps) {
                       <motion.div variants={menuItemVariants}>
                         <Link
                           href={link.href}
-                          onClick={onClose}
+                          onClick={handleAnchorClick}
                           className="relative flex items-center py-4 lg:py-6"
                           aria-current={isActive ? "page" : undefined}
                         >
@@ -420,13 +436,13 @@ export function HomepageNavbar({ session }: { session: Session | null }) {
         }}
         animate={{
           backgroundColor:
-            scrolled && !menuOpen ? "var(--hp-glass-bg)" : "transparent",
+            scrolled && !menuOpen ? "var(--hp-glass-bg)" : "rgba(0, 0, 0, 0)",
           backdropFilter:
             scrolled && !menuOpen ? "blur(var(--hp-glass-blur))" : "blur(0px)",
           borderBottom:
             scrolled && !menuOpen
               ? "1px solid var(--hp-border)"
-              : "1px solid transparent",
+              : "1px solid rgba(0, 0, 0, 0)",
         }}
         transition={{ duration: 0.35, ease: "easeOut" }}
       >

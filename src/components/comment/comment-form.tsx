@@ -69,11 +69,11 @@ export function CommentForm({
             <Label htmlFor={field.name} className="sr-only">
               Tulis komentar
             </Label>
-            <div className="flex items-end gap-2 rounded-2xl border border-input bg-muted/40 p-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 transition-all">
+            <div className="flex items-end gap-2 rounded-2xl border border-input bg-muted/40 p-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 transition-colors">
               <Textarea
                 id={field.name}
                 placeholder="Tulis pesan... (Enter untuk kirim, Shift+Enter untuk baris baru)"
-                className="min-h-[44px] max-h-32 resize-none border-0 bg-transparent p-2 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:outline-none"
+                className="min-h-[44px] max-h-32 resize-none border-0 bg-transparent p-2 text-base md:text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:outline-none"
                 rows={1}
                 value={field.state.value}
                 onBlur={field.handleBlur}
@@ -109,7 +109,7 @@ export function CommentForm({
                     <Button
                       type="submit"
                       size="icon"
-                      className="size-11 sm:size-10 shrink-0 rounded-xl transition-all active:scale-95"
+                      className="size-11 sm:size-10 shrink-0 rounded-xl transition-colors active:scale-95"
                       disabled={isDisabled}
                       aria-label="Kirim komentar"
                     >

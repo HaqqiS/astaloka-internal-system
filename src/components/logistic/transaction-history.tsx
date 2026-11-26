@@ -133,7 +133,7 @@ export function TransactionHistory({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`font-semibold ${isIn ? "text-green-600" : "text-red-600"}`}
+                    className={`font-semibold ${isIn ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
                   >
                     {isIn ? "+" : "−"}
                     {tx.quantity} {tx.item.unit}
@@ -202,7 +202,9 @@ export function TransactionHistory({
               return (
                 <TableRow key={tx.id}>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                    {format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm")}
+                    {format(new Date(tx.createdAt), "dd MMM yyyy, HH:mm", {
+                      locale: id,
+                    })}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -223,7 +225,7 @@ export function TransactionHistory({
                   </TableCell>
                   <TableCell className="text-right">
                     <span
-                      className={`font-semibold text-sm ${isIn ? "text-green-600" : "text-red-600"}`}
+                      className={`font-semibold text-sm ${isIn ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {isIn ? "+" : "−"}
                       {tx.quantity}

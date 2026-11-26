@@ -1,6 +1,11 @@
 "use client";
 
-import { IconBox, IconHistory, IconLoader2 } from "@tabler/icons-react";
+import {
+  IconBox,
+  IconHistory,
+  IconLoader2,
+  IconRefresh,
+} from "@tabler/icons-react";
 import Link from "next/link";
 import { PageLayout } from "~/components/layout";
 import { Button } from "~/components/ui/button";
@@ -15,13 +20,38 @@ import {
 import { useLogisticsAnalytics } from "~/hooks";
 
 export function LogisticsClient() {
-  const { data: projects, isLoading } = useLogisticsAnalytics();
+  const {
+    data: projects,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useLogisticsAnalytics();
 
   if (isLoading) {
     return (
       <PageLayout title="Ringkasan Logistik">
         <div className="flex h-[50vh] items-center justify-center">
           <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageLayout title="Ringkasan Logistik">
+        <div className="flex h-[50vh] flex-col items-center justify-center gap-3 p-4 text-center">
+          <p className="text-sm font-medium text-destructive">
+            Gagal memuat ringkasan logistik
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <IconRefresh className="mr-1.5 size-3.5" />
+            Coba Lagi
+          </Button>
         </div>
       </PageLayout>
     );

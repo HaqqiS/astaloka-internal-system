@@ -12,6 +12,7 @@ import {
   IconLoader2,
   IconPencil,
   IconPlus,
+  IconRefresh,
   IconReport,
   IconTrash,
   IconUsers,
@@ -53,7 +54,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useDeleteProject, useProjectList } from "~/hooks";
-import { isAdmin } from "~/lib/auth-guards";
+import { isStrictAdmin } from "~/lib/auth-guards";
 import type { projectRouter } from "~/server/api/routers/project.router";
 import { useSessionStore } from "~/stores/use-session-store";
 
@@ -62,7 +63,7 @@ type ProjectListItem = inferRouterOutputs<
 >["getAll"][number];
 
 export function ProjectsClient() {
-  const { data: projects, isLoading, error } = useProjectList();
+  const { data: projects, isLoading, error, refetch } = useProjectList();
   const deleteProject = useDeleteProject();
   const session = useSessionStore((state) => state.session);
 
@@ -75,7 +76,7 @@ export function ProjectsClient() {
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [teamProjectId, setTeamProjectId] = useState<string | null>(null);
 
-  const canManage = isAdmin(
+  const canManage = isStrictAdmin(
     session?.user?.roleGlobal as GlobalRole | null | undefined,
   );
 
@@ -134,6 +135,10 @@ export function ProjectsClient() {
             Gagal memuat proyek
           </h2>
           <p className="text-muted-foreground">{error.message}</p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <IconRefresh className="mr-1.5 size-3.5" />
+            Coba Lagi
+          </Button>
         </div>
       </PageLayout>
     );
@@ -182,7 +187,7 @@ export function ProjectsClient() {
               return (
                 <Card
                   key={project.id}
-                  className="overflow-hidden transition-all duration-300"
+                  className="overflow-hidden transition-colors"
                 >
                   {/* Row 1: Header */}
                   <div className="grid grid-cols-1 items-center gap-4 p-4 md:grid-cols-4 md:px-6 md:py-4">

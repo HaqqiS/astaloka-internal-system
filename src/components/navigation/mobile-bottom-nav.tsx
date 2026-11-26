@@ -228,7 +228,7 @@ export function MobileBottomNav() {
     }
   }, [isError, urlSlug, clearSelectedProject]);
 
-  const slug = selectedProjectSlug;
+  const slug = selectedProjectSlug || urlSlug;
   const hasProject = !!slug;
 
   const handleDisabledTabClick = (tab: NavTab) => {
@@ -297,7 +297,7 @@ export function MobileBottomNav() {
       {/* Outer nav: pinned to bottom-0 so translateY(100%) hides it flush */}
       <nav
         ref={setNavNode}
-        className="fixed bottom-0 left-0 right-0 z-40 md:hidden px-3 transition-transform duration-200 ease-in-out will-change-transform"
+        className="fixed bottom-0 left-0 right-0 z-40 md:hidden px-3 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         {/* Inner floating pill — rounded-[var(--radius)] matches theme token (1rem) */}

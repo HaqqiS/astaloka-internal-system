@@ -1,8 +1,8 @@
 "use client";
 
-import { IconLoader2 } from "@tabler/icons-react";
+import { IconRefresh } from "@tabler/icons-react";
 import Link from "next/link";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { PageLayout } from "~/components/layout";
 import { Button } from "~/components/ui/button";
 import {
@@ -19,27 +19,60 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "~/components/ui/chart";
+import { Skeleton } from "~/components/ui/skeleton";
 import { useEmergencyAnalytics } from "~/hooks";
 
 const chartConfig = {
   deposit: {
-    label: "Dana Masuk",
+    label: "Deposit",
     color: "var(--chart-1)",
   },
   withdrawal: {
-    label: "Penarikan",
+    label: "Withdrawal",
     color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
 
 export function EmergencyClient() {
-  const { data, isLoading } = useEmergencyAnalytics();
+  const { data, isLoading, isError, error, refetch } = useEmergencyAnalytics();
 
   if (isLoading) {
     return (
       <PageLayout title="Dana Darurat">
-        <div className="flex h-full items-center justify-center">
-          <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="grid gap-6 p-4 md:grid-cols-2 lg:grid-cols-3 md:p-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[180px] w-full rounded-lg" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-9 w-full rounded-lg" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageLayout title="Dana Darurat">
+        <div className="flex h-[50vh] flex-col items-center justify-center gap-3 p-4 text-center">
+          <p className="text-sm font-medium text-destructive">
+            Gagal memuat analitik dana darurat
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <IconRefresh className="mr-1.5 size-3.5" />
+            Coba Lagi
+          </Button>
         </div>
       </PageLayout>
     );
@@ -61,7 +94,7 @@ export function EmergencyClient() {
         {data.projects.map((project) => (
           <Card
             key={project.id}
-            className="flex flex-col overflow-hidden transition-all hover:shadow-md"
+            className="flex flex-col overflow-hidden transition-colors hover:border-border/80"
           >
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
@@ -71,14 +104,32 @@ export function EmergencyClient() {
                   </CardTitle>
                   <CardDescription className="flex items-center gap-1.5">
                     Saldo Saat Ini:
-                    <span className="font-bold text-primary">
+                    <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                       Rp {Number(project.balance).toLocaleString("id-ID")}
                     </span>
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 pb-2">
+            <CardContent className="flex flex-1 flex-col gap-2 pb-2">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block size-2.5 rounded-xs"
+                    style={{ backgroundColor: "var(--chart-1)" }}
+                    aria-hidden="true"
+                  />
+                  Deposit
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block size-2.5 rounded-xs"
+                    style={{ backgroundColor: "var(--chart-2)" }}
+                    aria-hidden="true"
+                  />
+                  Withdrawal
+                </span>
+              </div>
               <div className="h-[180px] w-full">
                 <ChartContainer config={chartConfig} className="h-full w-full">
                   <BarChart accessibilityLayer data={project.monthlyActivity}>
@@ -93,6 +144,19 @@ export function EmergencyClient() {
                       tickMargin={10}
                       axisLine={false}
                       tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    />
+                    <YAxis
+                      width={44}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                      tickFormatter={(v: number) =>
+                        v >= 1_000_000
+                          ? `${(v / 1_000_000).toFixed(1)}jt`
+                          : v >= 1_000
+                            ? `${Math.round(v / 1_000)}rb`
+                            : String(v)
+                      }
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar

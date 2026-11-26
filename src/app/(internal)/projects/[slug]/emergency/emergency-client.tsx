@@ -28,7 +28,7 @@ export function EmergencyClient({ projectSlug }: EmergencyClientProps) {
     error,
   } = useProjectBySlug(projectSlug);
   const { user } = useSession();
-  const { isAdmin } = useUserRole();
+  const { isGlobalAdmin } = useUserRole();
 
   const [isFundOpen, setIsFundOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -64,9 +64,9 @@ export function EmergencyClient({ projectSlug }: EmergencyClientProps) {
   const projectMember = project.members.find((m) => m.userId === user?.id);
   const memberRole = projectMember?.role;
 
-  const canAddFund = isAdmin || memberRole === "FINANCE";
-  const canWithdraw = isAdmin || memberRole === "SUPERVISOR";
-  const canReview = isAdmin || memberRole === "FINANCE";
+  const canAddFund = isGlobalAdmin || memberRole === "FINANCE";
+  const canWithdraw = isGlobalAdmin || memberRole === "SUPERVISOR";
+  const canReview = isGlobalAdmin || memberRole === "FINANCE";
 
   return (
     <PageLayout title={`${project.name} — Dana Darurat`}>
@@ -106,7 +106,7 @@ export function EmergencyClient({ projectSlug }: EmergencyClientProps) {
               projectSlug={project.slug}
               canReview={canReview}
               currentUserId={user?.id}
-              isAdmin={isAdmin}
+              isAdmin={isGlobalAdmin}
             />
           </div>
         </div>

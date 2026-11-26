@@ -53,24 +53,30 @@ export function GrandFooter() {
         {/* Bottom Metadata */}
         <div className="flex flex-col items-center justify-between border-t border-[var(--hp-border)] pt-8 md:flex-row">
           <div className="mb-4 flex gap-8 md:mb-0 text-sm opacity-60 font-mono">
-            <Link
-              href="#"
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-[var(--hp-clay)] transition-colors"
             >
               Instagram
-            </Link>
-            <Link
-              href="#"
+            </a>
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-[var(--hp-clay)] transition-colors"
             >
               LinkedIn
-            </Link>
-            <Link
-              href="#"
+            </a>
+            <a
+              href="https://behance.net"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:text-[var(--hp-clay)] transition-colors"
             >
               Behance
-            </Link>
+            </a>
           </div>
 
           <div className="text-sm opacity-40 font-mono">

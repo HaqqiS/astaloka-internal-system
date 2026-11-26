@@ -9,7 +9,7 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import Link from "next/link";
-import { Badge } from "~/components/ui/badge";
+import { Badge } from "~/components/reui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
@@ -50,12 +50,12 @@ export function EmergencyFundSection({
             Dana Darurat
           </CardTitle>
         </div>
-        <Link href={`/projects/${projectSlug}/emergency`}>
-          <Button variant="ghost" size="sm" className="gap-1">
+        <Button variant="ghost" size="sm" className="gap-1" asChild>
+          <Link href={`/projects/${projectSlug}/emergency`}>
             Lihat Semua
             <IconChevronRight className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
@@ -119,20 +119,21 @@ export function EmergencyFundSection({
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge
-                          className={
+                          variant={
                             transaction.type === "DEPOSIT"
-                              ? "bg-green-100 text-green-700 border-green-200"
-                              : "bg-red-100 text-red-700 border-red-200"
+                              ? "success"
+                              : "destructive"
                           }
-                          variant="outline"
                         >
-                          {transaction.type === "DEPOSIT" ? "Masuk" : "Keluar"}
+                          {transaction.type === "DEPOSIT"
+                            ? "Deposit"
+                            : "Withdrawal"}
                         </Badge>
                         <p
-                          className={`font-medium ${
+                          className={`font-medium tabular-nums ${
                             transaction.type === "DEPOSIT"
-                              ? "text-green-600"
-                              : "text-red-600"
+                              ? "text-emerald-700 dark:text-emerald-400"
+                              : "text-red-600 dark:text-red-400"
                           }`}
                         >
                           {transaction.type === "DEPOSIT" ? "+" : "-"}

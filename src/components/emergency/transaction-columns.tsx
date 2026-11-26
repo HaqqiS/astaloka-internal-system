@@ -10,7 +10,8 @@ import {
 } from "@tabler/icons-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Badge } from "~/components/ui/badge";
+import { id as idLocale } from "date-fns/locale";
+import { Badge } from "~/components/reui/badge";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -57,7 +58,10 @@ export function getEmergencyTransactionColumns({
     {
       accessorKey: "createdAt",
       header: "Tanggal",
-      cell: ({ row }) => format(new Date(row.getValue("createdAt")), "PP p"),
+      cell: ({ row }) =>
+        format(new Date(row.getValue("createdAt")), "dd MMM yyyy, HH:mm", {
+          locale: idLocale,
+        }),
     },
     {
       accessorKey: "type",
@@ -66,7 +70,7 @@ export function getEmergencyTransactionColumns({
         const type = row.getValue("type") as string;
         return (
           <Badge variant={type === "DEPOSIT" ? "default" : "secondary"}>
-            {type}
+            {type === "DEPOSIT" ? "Deposit" : "Withdrawal"}
           </Badge>
         );
       },
@@ -77,7 +81,10 @@ export function getEmergencyTransactionColumns({
       cell: ({ row }) => {
         const amount = Number(row.getValue("amount"));
         const type = row.getValue("type") as string;
-        const color = type === "DEPOSIT" ? "text-green-600" : "text-red-600";
+        const color =
+          type === "DEPOSIT"
+            ? "text-emerald-700 dark:text-emerald-400"
+            : "text-red-600 dark:text-red-400";
         return (
           <div className={`font-medium tabular-nums ${color}`}>
             {type === "DEPOSIT" ? "+" : "-"}
@@ -92,8 +99,8 @@ export function getEmergencyTransactionColumns({
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         return (
-          <Badge variant={status === "REVIEWED" ? "outline" : "destructive"}>
-            {status}
+          <Badge variant={status === "REVIEWED" ? "success" : "warning"}>
+            {status === "REVIEWED" ? "Terverifikasi" : "Menunggu Tinjauan"}
           </Badge>
         );
       },
@@ -107,13 +114,14 @@ export function getEmergencyTransactionColumns({
         return (
           <button
             type="button"
+            aria-label="Lihat bukti transaksi"
             className="group relative h-10 w-10 overflow-hidden rounded border bg-muted flex items-center justify-center cursor-pointer"
             onClick={() => onPreviewImage(proofUrl)}
           >
             {/* biome-ignore lint: using img for Cloudinary external URLs */}
             <img
               src={proofUrl}
-              alt="Proof"
+              alt="Bukti transaksi"
               className="h-full w-full object-cover transition-transform group-hover:scale-110"
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">

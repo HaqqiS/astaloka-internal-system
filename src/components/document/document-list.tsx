@@ -5,12 +5,14 @@ import {
   IconFileText,
   IconLayoutGrid,
   IconList,
-  IconLoader2,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { DataGrid, type DataGridCsvColumn } from "~/components/ui/data-grid";
+import { DataGrid, type DataGridCsvColumn } from "~/components/reui/data-grid";
+import { Button } from "~/components/ui/button";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useDocumentsByProject, useGetDownloadUrl } from "~/hooks/useDocument";
 import { cn } from "~/lib/utils";
@@ -40,7 +42,13 @@ export function DocumentList({
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const { data: documents, isLoading } = useDocumentsByProject(
+  const {
+    data: documents,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useDocumentsByProject(
     projectId,
     activeTab === "ALL" ? undefined : (activeTab as DocumentType),
   );
@@ -142,17 +150,17 @@ export function DocumentList({
             </TabsTrigger>
           </TabsList>
 
-          {/* Segmented View Switcher: Grid vs Table */}
+          {/* Segmented View Switcher: Grid vs Table (Desktop only; mobile uses card view) */}
           <fieldset
             aria-label="Mode tampilan dokumen"
-            className="inline-flex items-center self-start sm:self-auto rounded-lg border border-border/70 bg-muted/50 p-0.5 shadow-2xs"
+            className="hidden md:inline-flex items-center self-start sm:self-auto rounded-lg border border-border/70 bg-muted/50 p-0.5 shadow-2xs"
           >
             <button
               type="button"
               onClick={() => setViewMode("grid")}
               aria-pressed={viewMode === "grid"}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                 viewMode === "grid"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground",
@@ -166,7 +174,7 @@ export function DocumentList({
               onClick={() => setViewMode("table")}
               aria-pressed={viewMode === "table"}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all",
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                 viewMode === "table"
                   ? "bg-background text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground",
@@ -180,8 +188,31 @@ export function DocumentList({
 
         <div className="mt-6 min-h-50">
           {isLoading ? (
-            <div className="flex h-40 items-center justify-center">
-              <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-3 rounded-xl border p-4">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border p-8 text-center">
+              <p className="text-sm font-medium text-destructive">
+                Gagal memuat dokumen proyek
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void refetch()}
+              >
+                <IconRefresh className="mr-1.5 size-3.5" />
+                Coba Lagi
+              </Button>
             </div>
           ) : !hasDocuments ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed p-12 text-center bg-muted/20">
@@ -194,19 +225,35 @@ export function DocumentList({
               </p>
             </div>
           ) : viewMode === "table" ? (
-            <DataGrid
-              columns={columns}
-              data={documents as DocumentWithUploader[]}
-              filterColumn="title"
-              filterPlaceholder="Cari judul atau nama file dokumen..."
-              initialColumnPinning={{
-                left: ["title"],
-                right: ["actions"],
-              }}
-              exportFilename="dokumen-proyek"
-              csvColumns={csvColumns}
-              emptyMessage="Tidak ada dokumen yang cocok dengan pencarian."
-            />
+            <>
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {documents.map((doc) => (
+                  <DocumentCard
+                    key={doc.id}
+                    document={doc}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </div>
+              <div className="hidden md:block">
+                <DataGrid
+                  columns={columns}
+                  data={documents as DocumentWithUploader[]}
+                  filterColumn="title"
+                  filterPlaceholder="Cari judul atau nama file dokumen..."
+                  initialColumnPinning={{
+                    left: ["title"],
+                    right: ["actions"],
+                  }}
+                  exportFilename="dokumen-proyek"
+                  csvColumns={csvColumns}
+                  emptyMessage="Tidak ada dokumen yang cocok dengan pencarian."
+                />
+              </div>
+            </>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {documents.map((doc) => (

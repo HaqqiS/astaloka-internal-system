@@ -41,7 +41,7 @@ export function CountryPicker({
           type="button"
           disabled={disabled}
           aria-label={`Pilih negara (saat ini ${selectedCountry.name} ${selectedCountry.dialCode})`}
-          className="group absolute left-1.5 top-1/2 -translate-y-1/2 z-10 flex h-7 items-center gap-1.5 rounded-md border border-input/60 bg-muted/50 px-2 py-0.5 text-foreground shadow-2xs transition-all hover:bg-muted hover:border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          className="group absolute left-1.5 top-1/2 -translate-y-1/2 z-10 flex h-7 items-center gap-1.5 rounded-md border border-input/60 bg-muted/50 px-2 py-0.5 text-foreground shadow-2xs transition-colors hover:bg-muted hover:border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="text-sm leading-none drop-shadow-xs">
             {selectedCountry.flag}
@@ -70,10 +70,11 @@ export function CountryPicker({
             />
             <input
               type="text"
+              aria-label="Cari nama atau kode negara"
               placeholder="Cari nama atau kode negara..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-muted/50 border-input h-8 w-full rounded-md border pl-8 pr-2.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground"
+              className="bg-muted/50 border-input h-8 w-full rounded-md border pl-8 pr-2.5 text-base md:text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground"
             />
           </div>
 

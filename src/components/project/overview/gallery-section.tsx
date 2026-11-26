@@ -71,16 +71,17 @@ export function GallerySection({
           )}
         </div>
 
-        <Link href={`/projects/${projectSlug}/gallery`}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 text-xs cursor-pointer"
-          >
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-1 text-xs cursor-pointer"
+          asChild
+        >
+          <Link href={`/projects/${projectSlug}/gallery`}>
             <span>Lihat Galeri</span>
             <IconChevronRight className="size-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
 
       <CardContent>
@@ -97,7 +98,7 @@ export function GallerySection({
               <Link
                 key={photo.id}
                 href={`/projects/${projectSlug}/gallery`}
-                className="group relative aspect-4/3 overflow-hidden rounded-xl border border-border/60 bg-muted/40 transition-all hover:border-primary/40 hover:shadow-xs"
+                className="group relative aspect-4/3 overflow-hidden rounded-xl border border-border/60 bg-muted/40 transition-colors hover:border-primary/40"
               >
                 {/* biome-ignore lint/performance/noImgElement: Cloudinary dynamic preview image */}
                 <img

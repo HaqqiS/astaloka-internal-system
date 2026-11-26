@@ -217,7 +217,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
             variant="outline"
             disabled={isGoogleLoading || isLoading}
             onClick={handleGoogleSignIn}
-            className="border-input hover:bg-muted/60 relative h-10 w-full gap-2.5 text-xs font-semibold transition-all active:scale-[0.98]"
+            className="border-input hover:bg-muted/60 relative h-10 w-full gap-2.5 text-xs font-semibold transition-colors active:scale-[0.98]"
           >
             {isGoogleLoading ? (
               <IconLoader2 size={16} className="animate-spin" />
@@ -283,7 +283,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                     placeholder="nama@sandaran.id"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-10 rounded-lg pl-9 text-xs transition-colors"
+                    className="h-10 rounded-lg pl-9 text-base md:text-xs transition-colors"
                   />
                 </div>
                 {fieldErrors.email && (
@@ -315,7 +315,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                     style={{
                       paddingLeft: `${selectedCountry.dialCode.length * 8 + 72}px`,
                     }}
-                    className="h-10 rounded-lg text-xs transition-colors"
+                    className="h-10 rounded-lg text-base md:text-xs transition-colors"
                   />
                 </div>
                 {fieldErrors.phone && (
@@ -344,7 +344,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 rounded-lg pl-9 pr-10 text-xs transition-colors"
+                  className="h-10 rounded-lg pl-9 pr-10 text-base md:text-xs transition-colors"
                 />
                 <button
                   type="button"
@@ -391,7 +391,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
             <Button
               type="submit"
               disabled={isLoading || isGoogleLoading}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full text-xs font-semibold transition-all active:scale-[0.98] mt-1"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full text-xs font-semibold transition-colors active:scale-[0.98] mt-1"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
@@ -414,35 +414,26 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
         </CardContent>
       </Card>
 
-      {/* Footer Legal Disclaimer Modal Trigger (Semua text adalah click zone) */}
-      <button
-        type="button"
-        onClick={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.dataset.legal === "privacy") {
-            openLegalModal("privacy");
-          } else {
-            openLegalModal("terms");
-          }
-        }}
-        className="w-full text-balance px-2 text-center text-[10px] leading-relaxed text-muted-foreground cursor-pointer select-none outline-none focus-visible:ring-1 focus-visible:ring-ring rounded py-0.5"
-      >
+      {/* Footer Legal Disclaimer Modal Triggers */}
+      <p className="w-full text-balance px-2 text-center text-xs leading-relaxed text-muted-foreground">
         Dengan melanjutkan, Anda menyetujui{" "}
-        <span
-          data-legal="terms"
-          className="font-medium text-foreground/85 underline underline-offset-4 transition-colors hover:text-primary"
+        <button
+          type="button"
+          onClick={() => openLegalModal("terms")}
+          className="font-medium text-foreground/85 underline underline-offset-4 transition-colors hover:text-primary cursor-pointer"
         >
           Ketentuan Layanan
-        </span>{" "}
+        </button>{" "}
         serta{" "}
-        <span
-          data-legal="privacy"
-          className="font-medium text-foreground/85 underline underline-offset-4 transition-colors hover:text-primary"
+        <button
+          type="button"
+          onClick={() => openLegalModal("privacy")}
+          className="font-medium text-foreground/85 underline underline-offset-4 transition-colors hover:text-primary cursor-pointer"
         >
           Kebijakan Privasi
-        </span>{" "}
+        </button>{" "}
         Sandaran.
-      </button>
+      </p>
 
       {/* Terms & Privacy Policy Dialog Modal */}
       <TermsPrivacyModal

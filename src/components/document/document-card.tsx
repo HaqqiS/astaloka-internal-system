@@ -11,6 +11,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -102,7 +103,7 @@ export function DocumentCard({
   };
 
   return (
-    <Card className="flex flex-col h-full hover:shadow-md transition-shadow">
+    <Card className="flex flex-col h-full transition-colors hover:border-border/80">
       <CardHeader className="flex-row gap-4 items-start space-y-0 pb-2">
         <div className="rounded-lg border p-2 bg-muted/20 w-fit">
           {getFileIcon()}
@@ -145,7 +146,11 @@ export function DocumentCard({
           </Avatar>
           <span>{doc.uploader.name}</span>
           <span>•</span>
-          <span>{format(new Date(doc.createdAt), "dd MMM yyyy")}</span>
+          <span>
+            {format(new Date(doc.createdAt), "dd MMM yyyy", {
+              locale: idLocale,
+            })}
+          </span>
         </div>
       </CardContent>
 
@@ -172,6 +177,7 @@ export function DocumentCard({
               size="icon-sm"
               className="h-8 w-8"
               onClick={() => onEdit(doc)}
+              aria-label={`Edit dokumen ${doc.title || doc.fileName}`}
             >
               <IconEdit className="h-3.5 w-3.5" />
             </Button>
@@ -180,6 +186,7 @@ export function DocumentCard({
               size="icon-sm"
               className="h-8 w-8 text-destructive hover:text-destructive"
               onClick={() => onDelete(doc)}
+              aria-label={`Hapus dokumen ${doc.title || doc.fileName}`}
             >
               <IconTrash className="h-3.5 w-3.5" />
             </Button>

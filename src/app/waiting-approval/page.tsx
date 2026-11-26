@@ -20,13 +20,13 @@ export default async function WaitingApprovalPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-gray-50 to-gray-100 px-4">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-sm">
         <div className="text-center">
           {/* Icon */}
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/15">
             <svg
-              className="h-8 w-8 text-yellow-600"
+              className="h-8 w-8 text-amber-600 dark:text-amber-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -42,18 +42,20 @@ export default async function WaitingApprovalPage() {
           </div>
 
           {/* Title */}
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+          <h1 className="mb-2 text-3xl font-bold text-foreground">
             Menunggu Persetujuan
           </h1>
 
           {/* User Info */}
-          <div className="mb-6 rounded-lg bg-gray-50 p-4">
-            <p className="text-sm text-gray-600">Akun Anda:</p>
-            <p className="font-semibold text-gray-900">{session.user.email}</p>
+          <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
+            <p className="text-sm text-muted-foreground">Akun Anda:</p>
+            <p className="font-semibold text-foreground">
+              {session.user.email}
+            </p>
           </div>
 
           {/* Message */}
-          <div className="space-y-4 text-gray-600">
+          <div className="space-y-4 text-sm text-muted-foreground">
             <p>Akun Anda sedang menunggu persetujuan dari administrator.</p>
             <p>
               Silakan hubungi administrator untuk mengaktifkan akses Anda ke
@@ -62,8 +64,8 @@ export default async function WaitingApprovalPage() {
           </div>
 
           {/* Status Badge */}
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-800">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-yellow-600" />
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-600 dark:bg-amber-400" />
             Status: Menunggu Persetujuan
           </div>
 
@@ -82,7 +84,7 @@ export default async function WaitingApprovalPage() {
                   });
                   redirect("/");
                 }}
-                className="w-full rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition hover:bg-gray-800"
+                className="w-full rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Log out
               </button>
@@ -90,7 +92,7 @@ export default async function WaitingApprovalPage() {
 
             <Link
               href="/"
-              className="block text-sm text-gray-600 hover:text-gray-900"
+              className="block text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Kembali ke Beranda
             </Link>

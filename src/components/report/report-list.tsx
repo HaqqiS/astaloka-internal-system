@@ -9,14 +9,14 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { useMemo } from "react";
-import { Button } from "~/components/ui/button";
 import {
   FilterBar,
   type FilterField,
   useDynamicFilters,
-} from "~/components/ui/filters";
-import { ItemGroup } from "~/components/ui/item";
-import { useReportsByProject } from "~/hooks";
+} from "~/components/reui/filters";
+import { ItemGroup } from "~/components/reui/item";
+import { Button } from "~/components/ui/button";
+import { useInfiniteReportsByProject } from "~/hooks";
 import { ReportCard } from "./report-card";
 import { ReportListItem } from "./report-list-item";
 import type { ReportItemData, ReportViewMode } from "./types";
@@ -75,11 +75,22 @@ export function ReportList({
   onEditReport,
   onDeleteReport,
 }: ReportListProps) {
-  const { data, isLoading, error } = useReportsByProject(projectId);
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteReportsByProject(projectId);
   const { activeFilters, addFilter, removeFilter, resetFilters } =
     useDynamicFilters();
 
-  const reports = data?.reports ?? [];
+  const reports = useMemo(
+    () => data?.pages.flatMap((page) => page.reports) ?? [],
+    [data?.pages],
+  );
 
   const filteredReports = useMemo(() => {
     if (activeFilters.length === 0) return reports;
@@ -143,8 +154,12 @@ export function ReportList({
 
   if (error) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center gap-2 text-center">
+      <div className="flex h-48 flex-col items-center justify-center gap-3 text-center">
         <p className="text-sm text-muted-foreground">Gagal memuat laporan</p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          <IconRefresh className="mr-1.5 size-3.5" />
+          Coba Lagi
+        </Button>
       </div>
     );
   }
@@ -235,10 +250,18 @@ export function ReportList({
       )}
 
       {/* Load More */}
-      {data?.nextCursor && (
+      {hasNextPage && (
         <div className="flex justify-center pt-4">
-          <Button variant="outline" disabled>
-            Muat Lebih Banyak
+          <Button
+            variant="outline"
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="gap-2"
+          >
+            {isFetchingNextPage && (
+              <IconLoader2 className="size-4 animate-spin" />
+            )}
+            {isFetchingNextPage ? "Memuat..." : "Muat Lebih Banyak"}
           </Button>
         </div>
       )}

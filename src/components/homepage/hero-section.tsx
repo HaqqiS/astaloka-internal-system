@@ -47,7 +47,7 @@ export function HeroSection() {
           end: "+=5000", // Diperpanjang agar scroll sangat mulus dan lega
           pin: true,
           scrub: MOTION.trigger.scrubSmooth,
-          markers: process.env.NODE_ENV === "development",
+          markers: process.env.NEXT_PUBLIC_GSAP_MARKERS === "true",
           snap: {
             snapTo: "labelsDirectional",
             duration: { min: 0.3, max: 0.8 },
@@ -253,7 +253,7 @@ export function HeroSection() {
 
       {/* ── Layer 2: Scene 0 — "CRAFTED / SPACES" ──────────────────────── */}
       {/* Diperkecil dan dipindahkan ke pojok agar tidak terlalu menutup gambar */}
-      <div className="absolute inset-0 flex flex-col justify-end pb-12 pr-6 text-right md:pr-14 lg:pr-20 z-20">
+      <div className="absolute inset-0 flex flex-col justify-end pb-32 pr-6 text-right sm:pb-16 md:pb-12 md:pr-14 lg:pr-20 z-20">
         <div className="overflow-hidden">
           <h1
             className="crafted-line font-black uppercase tracking-display"
@@ -341,7 +341,7 @@ export function HeroSection() {
       </div>
 
       {/* ── Meta: bottom-left studio info ─────────────────────────────── */}
-      <div className="hero-meta absolute bottom-10 left-6 flex flex-col gap-2 md:left-14 lg:left-20 z-30">
+      <div className="hero-meta absolute bottom-6 left-6 flex flex-col gap-1.5 sm:bottom-10 sm:gap-2 md:left-14 lg:left-20 z-30">
         <span
           className="text-[10px] font-bold uppercase tracking-[0.4em]"
           style={{ fontFamily: "var(--font-mono)", color: "var(--hp-clay)" }}
@@ -361,7 +361,7 @@ export function HeroSection() {
       </div>
 
       {/* ── Scroll Indicator ─────────────────────────────────────────── */}
-      <div className="hero-scroll-indicator absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 z-30">
+      <div className="hero-scroll-indicator absolute bottom-6 right-6 flex flex-col items-center gap-2 sm:bottom-10 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 sm:gap-3 z-30">
         <span
           className="text-[9px] font-bold uppercase tracking-[0.4em]"
           style={{

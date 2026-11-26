@@ -16,6 +16,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -76,7 +77,7 @@ export function ReportDetailClient({
 
   const isLoading = projectLoading || reportLoading;
   const userRole = session?.user?.roleGlobal as GlobalRole | undefined;
-  const isAdmin = userRole === "ADMIN" || userRole === "EXECUTIVE";
+  const isAdmin = userRole === "ADMIN";
   const isOwner = report?.userId === session?.user?.id;
   const canEdit = isAdmin || isOwner;
 
@@ -154,7 +155,9 @@ export function ReportDetailClient({
                   <p className="font-medium">{report.user.name}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <IconCalendar className="h-4 w-4" />
-                    {format(reportDate, "EEEE, dd MMMM yyyy")}
+                    {format(reportDate, "EEEE, dd MMMM yyyy", {
+                      locale: idLocale,
+                    })}
                   </div>
                 </div>
               </div>

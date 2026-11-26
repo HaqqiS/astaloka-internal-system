@@ -16,13 +16,19 @@ export default async function Home() {
         {/* Konten Utama (Berada di atas Footer) */}
         <div className="relative z-10 bg-[var(--hp-bg)] shadow-[0_20px_50px_rgba(0,0,0,0.8)] pb-10">
           <HeroSection />
-          <PortfolioSection />
-          <PhilosophySection />
+          <div id="projects">
+            <PortfolioSection />
+          </div>
+          <div id="about">
+            <PhilosophySection />
+          </div>
           <ExpertiseSection />
         </div>
 
         {/* Grand Footer (Tersembunyi di bawah konten utama, diungkap lewat scroll) */}
-        <GrandFooter />
+        <div id="contact">
+          <GrandFooter />
+        </div>
       </HomepageShell>
     </HydrateClient>
   );

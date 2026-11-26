@@ -13,8 +13,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { useEffect, useMemo, useState } from "react";
-import { DepositDialog } from "~/components/emergency/deposit-dialog";
-import { WithdrawDialog } from "~/components/emergency/withdraw-dialog";
 import { PageLayout } from "~/components/layout";
 import { ExportReportDialog } from "~/components/project/export-report-dialog";
 import {
@@ -33,7 +31,7 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useProjectBySlug, useReportsByProject } from "~/hooks";
 import { useEmergencyFund } from "~/hooks/useEmergency";
-import { isAdmin } from "~/lib/auth-guards";
+import { isAdminOrExecutiveRole, isStrictAdmin } from "~/lib/auth-guards";
 import { formatWitaDate } from "~/lib/time-utils";
 import { useSessionStore } from "~/stores/use-session-store";
 
@@ -64,18 +62,12 @@ export function ProjectDetailClient({ slug }: ProjectDetailClientProps) {
   }, [reportsData?.reports]);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateReportOpen, setIsCreateReportOpen] = useState(false);
-  const [isFundOpen, setIsFundOpen] = useState(false);
-  const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isTeamOpen, setIsTeamOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const session = useSessionStore((state) => state.session);
-  const canManage = isAdmin(
-    session?.user?.roleGlobal as GlobalRole | null | undefined,
-  );
-
-  // Check user roles
   const userRole = session?.user?.roleGlobal as GlobalRole | undefined;
-  const isAdminRole = userRole === "ADMIN" || userRole === "EXECUTIVE";
+  const canManage = isStrictAdmin(userRole);
+  const canExport = isAdminOrExecutiveRole(userRole);
 
   const projectMember = project?.members.find(
     (m) => m.userId === session?.user?.id,
@@ -83,7 +75,7 @@ export function ProjectDetailClient({ slug }: ProjectDetailClientProps) {
   const memberRole = projectMember?.role as ProjectRole | undefined;
 
   const canCreateReport =
-    isAdminRole || memberRole === "SUPERVISOR" || memberRole === "ARCHITECT";
+    canManage || memberRole === "SUPERVISOR" || memberRole === "ARCHITECT";
 
   if (isLoading) {
     return (
@@ -110,35 +102,41 @@ export function ProjectDetailClient({ slug }: ProjectDetailClientProps) {
     <PageLayout
       title={project.name}
       actions={
-        canManage && (
+        (canExport || canManage) && (
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsExportOpen(true)}
-            >
-              <IconFileSpreadsheet className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Ekspor Laporan</span>
-              <span className="inline sm:hidden">Ekspor</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsTeamOpen(true)}
-            >
-              <IconUsers className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Kelola Tim</span>
-              <span className="inline sm:hidden">Tim</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditOpen(true)}
-            >
-              <IconPencil className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Edit Proyek</span>
-              <span className="inline sm:hidden">Edit</span>
-            </Button>
+            {canExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsExportOpen(true)}
+              >
+                <IconFileSpreadsheet className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Ekspor Laporan</span>
+                <span className="inline sm:hidden">Ekspor</span>
+              </Button>
+            )}
+            {canManage && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsTeamOpen(true)}
+                >
+                  <IconUsers className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Kelola Tim</span>
+                  <span className="inline sm:hidden">Tim</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditOpen(true)}
+                >
+                  <IconPencil className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Edit Proyek</span>
+                  <span className="inline sm:hidden">Edit</span>
+                </Button>
+              </>
+            )}
           </div>
         )
       }
@@ -293,27 +291,15 @@ export function ProjectDetailClient({ slug }: ProjectDetailClientProps) {
         onOpenChange={setIsCreateReportOpen}
       />
 
-      <DepositDialog
-        projectId={project.id}
-        projectSlug={project.slug}
-        open={isFundOpen}
-        onOpenChange={setIsFundOpen}
-      />
-
-      <WithdrawDialog
-        projectId={project.id}
-        projectSlug={project.slug}
-        open={isWithdrawOpen}
-        onOpenChange={setIsWithdrawOpen}
-      />
-
-      <TeamManagementDialog
-        projectId={project.id}
-        open={isTeamOpen}
-        onOpenChange={setIsTeamOpen}
-      />
-
       {canManage && (
+        <TeamManagementDialog
+          projectId={project.id}
+          open={isTeamOpen}
+          onOpenChange={setIsTeamOpen}
+        />
+      )}
+
+      {canExport && (
         <ExportReportDialog
           projectId={project.id}
           open={isExportOpen}

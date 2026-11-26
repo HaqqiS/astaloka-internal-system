@@ -14,13 +14,13 @@ export default async function UnauthorizedPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-red-50 to-gray-100 px-4">
-      <div className="w-full max-w-md space-y-8 rounded-2xl bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-card p-8 text-card-foreground shadow-sm">
         <div className="text-center">
           {/* Icon */}
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/15">
             <svg
-              className="h-8 w-8 text-red-600"
+              className="h-8 w-8 text-destructive"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -36,33 +36,35 @@ export default async function UnauthorizedPage() {
           </div>
 
           {/* Title */}
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+          <h1 className="mb-2 text-3xl font-bold text-foreground">
             Akses Ditolak
           </h1>
 
           {/* User Info */}
-          <div className="mb-6 rounded-lg bg-gray-50 p-4">
-            <p className="text-sm text-gray-600">Akun Anda:</p>
-            <p className="font-semibold text-gray-900">{session.user.email}</p>
+          <div className="mb-6 rounded-lg border border-border bg-muted/50 p-4">
+            <p className="text-sm text-muted-foreground">Akun Anda:</p>
+            <p className="font-semibold text-foreground">
+              {session.user.email}
+            </p>
           </div>
 
           {/* Message */}
-          <div className="space-y-4 text-gray-600">
-            <p className="font-semibold text-red-600">
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <p className="font-semibold text-destructive">
               Anda tidak memiliki izin untuk mengakses sistem internal ini.
             </p>
             <p>
               Sistem ini hanya dapat diakses oleh pengguna yang telah disetujui
               oleh administrator.
             </p>
-            <p className="text-sm">
+            <p>
               Jika Anda merasa ini adalah kesalahan, silakan hubungi
               administrator untuk mendapatkan akses.
             </p>
           </div>
 
           {/* Status Badge */}
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-800">
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive">
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <title>Unauthorized Access</title>
               <path
@@ -86,7 +88,7 @@ export default async function UnauthorizedPage() {
                   });
                   redirect("/");
                 }}
-                className="w-full rounded-lg bg-gray-900 px-4 py-3 font-semibold text-white transition hover:bg-gray-800"
+                className="w-full rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Log out
               </button>
@@ -94,7 +96,7 @@ export default async function UnauthorizedPage() {
 
             <Link
               href="/"
-              className="block text-sm text-gray-600 hover:text-gray-900"
+              className="block text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Kembali ke Beranda
             </Link>

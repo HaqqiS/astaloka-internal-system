@@ -6,6 +6,7 @@ import {
   IconFolder,
   IconHistory,
   IconLoader2,
+  IconRefresh,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -23,7 +24,13 @@ import {
 import { useDocumentsAnalytics, useGetDownloadUrl } from "~/hooks/useDocument";
 
 export function DocumentsClient() {
-  const { data: projects, isLoading } = useDocumentsAnalytics();
+  const {
+    data: projects,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useDocumentsAnalytics();
   const getDownloadUrl = useGetDownloadUrl();
 
   const handleDownload = async (projectId: string, documentId: string) => {
@@ -46,6 +53,25 @@ export function DocumentsClient() {
       <PageLayout title="Ringkasan Dokumen">
         <div className="flex h-[50vh] items-center justify-center">
           <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageLayout title="Ringkasan Dokumen">
+        <div className="flex h-[50vh] flex-col items-center justify-center gap-3 p-4 text-center">
+          <p className="text-sm font-medium text-destructive">
+            Gagal memuat ringkasan dokumen
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <IconRefresh className="mr-1.5 size-3.5" />
+            Coba Lagi
+          </Button>
         </div>
       </PageLayout>
     );

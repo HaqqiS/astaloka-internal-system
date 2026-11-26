@@ -320,11 +320,11 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                       onClick={() => {
                         const chars =
                           "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%";
+                        const randomBytes = new Uint32Array(10);
+                        crypto.getRandomValues(randomBytes);
                         let gen = "";
-                        for (let i = 0; i < 10; i++) {
-                          gen += chars.charAt(
-                            Math.floor(Math.random() * chars.length),
-                          );
+                        for (const byte of randomBytes) {
+                          gen += chars.charAt(byte % chars.length);
                         }
                         field.handleChange(gen);
                         toast.info(`Kata sandi acak dibuat: ${gen}`);
@@ -357,7 +357,7 @@ export function AccountDialog({ open, onOpenChange }: AccountDialogProps) {
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="Masukkan kata sandi saat ini"
-                          className="font-mono text-xs"
+                          className="font-mono text-base md:text-xs"
                           autoComplete="current-password"
                         />
                       </div>

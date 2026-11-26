@@ -4,6 +4,7 @@ import {
   IconBox,
   IconMinus,
   IconPlus,
+  IconRefresh,
   IconSearch,
   IconTrendingDown,
   IconTrendingUp,
@@ -12,6 +13,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDeleteDialog } from "~/components/shared/confirm-delete-dialog";
+import { Button } from "~/components/ui/button";
 import { DataGrid } from "~/components/ui/data-grid";
 import {
   FilterBar,
@@ -112,7 +114,13 @@ function ItemListSkeleton() {
 
 // ── Main Component ────────────────────────────────────────────
 export function ItemList({ projectId }: ItemListProps) {
-  const { data: items, isLoading } = useLogisticStockSummary(projectId);
+  const {
+    data: items,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useLogisticStockSummary(projectId);
   const { data: members } = useProjectMembers(projectId);
   const { session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
@@ -229,6 +237,23 @@ export function ItemList({ projectId }: ItemListProps) {
 
   if (isLoading) return <ItemListSkeleton />;
 
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border p-10 text-center">
+        <p className="text-sm font-medium text-destructive">
+          Gagal memuat data logistik
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {error?.message ?? "Terjadi kesalahan saat mengambil data."}
+        </p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          <IconRefresh className="mr-1.5 size-3.5" />
+          Coba Lagi
+        </Button>
+      </div>
+    );
+  }
+
   if (!items || items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed p-10 text-center">
@@ -336,7 +361,7 @@ export function ItemList({ projectId }: ItemListProps) {
                             item,
                           })
                         }
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-600 transition-all hover:bg-green-100 active:scale-95 dark:border-green-900 dark:bg-green-950 dark:text-green-400"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-600 transition-colors hover:bg-green-100 active:scale-95 dark:border-green-900 dark:bg-green-950 dark:text-green-400"
                         aria-label={`Tambah stok ${item.name}`}
                       >
                         <IconPlus className="h-4 w-4" />
@@ -350,7 +375,7 @@ export function ItemList({ projectId }: ItemListProps) {
                             item,
                           })
                         }
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-all hover:bg-red-100 active:scale-95 dark:border-green-900 dark:bg-red-950 dark:text-red-400"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 active:scale-95 dark:border-red-900 dark:bg-red-950 dark:text-red-400"
                         aria-label={`Kurangi stok ${item.name}`}
                       >
                         <IconMinus className="h-4 w-4" />

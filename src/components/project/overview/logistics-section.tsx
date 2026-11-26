@@ -122,12 +122,12 @@ export function LogisticsSection({
             </span>
           )}
         </div>
-        <Link href={`/projects/${projectSlug}/logistics`}>
-          <Button variant="ghost" size="sm" className="gap-1">
+        <Button variant="ghost" size="sm" className="gap-1" asChild>
+          <Link href={`/projects/${projectSlug}/logistics`}>
             Lihat Semua
             <IconChevronRight className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -267,7 +267,7 @@ export function LogisticsSection({
                                   item,
                                 })
                               }
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-600 transition-all hover:bg-green-100 active:scale-95 dark:border-green-900 dark:bg-green-950 dark:text-green-400 dark:hover:bg-green-900"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-200 bg-green-50 text-green-600 transition-colors hover:bg-green-100 active:scale-95 dark:border-green-900 dark:bg-green-950 dark:text-green-400 dark:hover:bg-green-900"
                               aria-label={`Tambah stok ${item.name}`}
                             >
                               <IconPlus className="h-4 w-4" />
@@ -281,7 +281,7 @@ export function LogisticsSection({
                                   item,
                                 })
                               }
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-all hover:bg-red-100 active:scale-95 dark:border-red-900 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100 active:scale-95 dark:border-red-900 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
                               aria-label={`Kurangi stok ${item.name}`}
                             >
                               <IconMinus className="h-4 w-4" />
@@ -319,12 +319,17 @@ export function LogisticsSection({
               </p>
             </div>
             {canRecordTransaction && (
-              <Link href={`/projects/${projectSlug}/logistics`}>
-                <Button size="sm" variant="outline" className="gap-1.5 mt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 mt-1"
+                asChild
+              >
+                <Link href={`/projects/${projectSlug}/logistics`}>
                   <IconPlus className="h-3.5 w-3.5" />
                   Tambah Barang
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             )}
           </div>
         )}

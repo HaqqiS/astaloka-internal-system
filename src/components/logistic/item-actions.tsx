@@ -43,7 +43,8 @@ export function ItemActions({ projectId, item, onDelete }: ItemActionsProps) {
   const projectMember = members?.find((m) => m.userId === session?.user?.id);
   const role = projectMember?.role;
 
-  const canManage = role === "FINANCE" || session?.user?.roleGlobal === "ADMIN";
+  const canManage =
+    role === "LOGISTIC" || session?.user?.roleGlobal === "ADMIN";
 
   return (
     <>

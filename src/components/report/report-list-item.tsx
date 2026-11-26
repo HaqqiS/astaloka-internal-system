@@ -54,7 +54,7 @@ export function ReportListItem({
     <Item
       asChild
       variant="outline"
-      className="min-h-11 flex-nowrap items-stretch gap-3 rounded-xl bg-card px-2.5 py-2 shadow-2xs transition-all hover:border-primary/30 hover:bg-muted/40 hover:shadow-xs active:scale-[0.995] sm:gap-3.5 sm:px-3 sm:py-2"
+      className="min-h-11 flex-nowrap items-stretch gap-3 rounded-xl bg-card px-2.5 py-2 shadow-2xs transition-colors hover:border-primary/30 hover:bg-muted/40 active:scale-[0.995] sm:gap-3.5 sm:px-3 sm:py-2"
     >
       <Link href={`/projects/${projectSlug}/reports/${report.slug}`}>
         {/* Zone 1: Leading Landscape Thumbnail */}
@@ -229,8 +229,13 @@ export function ReportListItem({
                 Progres
               </span>
               <Badge
-                variant="outline"
-                className="border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                variant={
+                  report.progressPercent >= 75
+                    ? "success-light"
+                    : report.progressPercent >= 35
+                      ? "default"
+                      : "warning-light"
+                }
               >
                 {report.progressPercent}%
               </Badge>

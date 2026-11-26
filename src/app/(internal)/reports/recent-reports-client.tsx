@@ -1,13 +1,18 @@
 "use client";
 
-import { IconLoader2 } from "@tabler/icons-react";
+import { IconLoader2, IconRefresh } from "@tabler/icons-react";
 import Link from "next/link";
 import { PageLayout } from "~/components/layout";
 import { ReportCard } from "~/components/report/report-card";
 import { Button } from "~/components/ui/button";
 import { useRecentReportsByProject } from "~/hooks";
 export function RecentReportsClient() {
-  const { data: projects, isLoading, error } = useRecentReportsByProject();
+  const {
+    data: projects,
+    isLoading,
+    error,
+    refetch,
+  } = useRecentReportsByProject();
 
   if (isLoading) {
     return (
@@ -27,6 +32,10 @@ export function RecentReportsClient() {
             Gagal memuat laporan
           </h2>
           <p className="text-muted-foreground">{error.message}</p>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <IconRefresh className="mr-1.5 size-3.5" />
+            Coba Lagi
+          </Button>
         </div>
       </PageLayout>
     );

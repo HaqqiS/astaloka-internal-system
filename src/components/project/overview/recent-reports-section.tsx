@@ -79,12 +79,12 @@ export function RecentReportsSection({
               Buat Laporan
             </Button>
           )}
-          <Link href={`/projects/${projectSlug}/reports`}>
-            <Button variant="ghost" size="sm" className="gap-1">
+          <Button variant="ghost" size="sm" className="gap-1" asChild>
+            <Link href={`/projects/${projectSlug}/reports`}>
               Lihat Semua
               <IconChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
