@@ -12,8 +12,13 @@ export function WaitingApprovalPoller() {
 
   useEffect(() => {
     const checkApproval = async () => {
+      if (document.hidden) return;
       try {
-        const result = await authClient.getSession();
+        const result = await authClient.getSession({
+          query: {
+            disableCookieCache: true,
+          },
+        });
         const user: InferredUser | undefined = result?.data?.user;
 
         if (
@@ -33,11 +38,12 @@ export function WaitingApprovalPoller() {
     // Cek langsung saat pertama kali mount
     void checkApproval();
 
-    // Lalu polling setiap 3 detik
+    // Lalu polling setiap 5 detik (otomatis jeda saat tab tidak aktif)
     const interval = setInterval(() => {
+      if (document.hidden) return;
       setIsChecking((prev) => !prev); // flip untuk visual indicator
       void checkApproval();
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [router]);

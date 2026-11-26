@@ -7,6 +7,9 @@ import { WaitingApprovalPoller } from "./waiting-approval-client";
 export default async function WaitingApprovalPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
+    query: {
+      disableCookieCache: true,
+    },
   });
 
   // If not logged in, redirect to home

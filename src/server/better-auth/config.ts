@@ -29,7 +29,8 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
     updateAge: 60 * 60 * 24, // Update session every 24 hours
     cookieCache: {
-      enabled: false, // Disabled: polling di /waiting-approval butuh fresh data dari DB
+      enabled: true,
+      maxAge: 30, // Cache sesi bertanda tangan 30 detik untuk hemat query DB (di-bypass di /waiting-approval)
     },
   },
   plugins: [nextCookies(), phoneNumber()],
